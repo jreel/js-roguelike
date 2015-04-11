@@ -7,7 +7,7 @@ Game.Templates.Monsters = {
     fungus: {
         name: 'fungus',
         character: 'F',
-        foreground: 'green',
+        foreground: '#682',     // close to "olive drab"
         maxHP: 10,
         attackValue: 0,
         isAttacker: false,
@@ -29,7 +29,7 @@ Game.Templates.Monsters = {
     newt: {
         name: 'newt',
         character: 'n',
-        foreground: 'yellow',
+        foreground: '#ff0',
         maxHP: 3,
         attackValue: 2,
         behaviors: {wanderer: Game.Behaviors.wanderer}

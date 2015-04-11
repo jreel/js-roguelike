@@ -12,10 +12,11 @@ Game.HeroTemplates = {
 
     default: {
         character: '@',
-        foreground: 'white',
-        background: 'black',
+        foreground: '#fff',
+        background: '#000',
         maxHP: 5,
         baseAttackValue: 10,
-        sightRadius: 6
+        sightRadius: 6,
+        inventorySlots: 22
     }
 };

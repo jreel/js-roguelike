@@ -23,6 +23,9 @@ Game.Entity = function Entity(properties) {
     this.canBePickedUp = properties['canBePickedUp'] || false;
     this.canBeDropped = properties['canBeDropped'] || false;
 
+    // TODO: creature inventories
+//    this.inventorySlots = template['inventorySlots'] || 10;
+
 };
 Game.Entity.extend(Game.Glyph);
 

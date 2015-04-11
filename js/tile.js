@@ -90,7 +90,7 @@ Game.Tile.bedrockTile = new Game.Tile({
 
 Game.Tile.prevLevelTile = new Game.Tile({
     character: '<',
-    foreground: 'goldenrod',
+    foreground: '#da2',     // close to 'goldenrod'
     isWalkable: true,
     canSpawnHere: false,
     isTransparent: true
@@ -98,7 +98,7 @@ Game.Tile.prevLevelTile = new Game.Tile({
 
 Game.Tile.nextLevelTile = new Game.Tile({
     character: '>',
-    foreground: 'goldenrod',
+    foreground: '#da2',
     isWalkable: true,
     canSpawnHere: false,
     isTransparent: true

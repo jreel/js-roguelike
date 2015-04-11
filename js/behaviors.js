@@ -39,7 +39,7 @@ Game.Behaviors = {
         owner.growthRemaining--;
 
         // alert nearby
-        Game.sendMessageNearby(level, xTarget, yTarget, String.format('The %s is spreading!', owner.name));
+        Game.sendMessageNearby(level, xTarget, yTarget, "The %s is spreading!", owner.name);
     },
 
     wanderer: function(owner) {

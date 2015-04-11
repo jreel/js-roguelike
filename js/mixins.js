@@ -37,16 +37,23 @@ Game.Mixins.movable = {
             if (this === Game.thePlayer) {
                 // TODO: support for different tilesets
                 if (tile == Game.Tile.prevLevelTile) {
-                    Game.sendMessage(this, String.format("Press [Space] to go back to level %s.",
-                        level.level - 1));
+                    Game.sendMessage(this, "Press [Space] to go back to level %s.", level.level - 1);
                 }
                 if (tile == Game.Tile.nextLevelTile) {
-                    Game.sendMessage(this, String.format("Press [Space] to advance to level %s.",
-                        level.level + 1));
+                    Game.sendMessage(this, "Press [Space] to advance to level %s.", level.level + 1);
                 }
                 // check if we can simply walk there
                 // and if so, update our position
                 this.setPosition(x, y);
+                // if there are items here, let the player know
+                var items = this.level.getItemsAt(x, y);
+                if (items) {
+                    if (items.length === 1) {
+                        Game.sendMessage(this, "You see %s", items[0].nameA());
+                    } else {
+                        Game.sendMessage(this, "There is a small pile of things here.");
+                    }
+                }
                 return true;
             } else if (tile.canSpawnHere) {
                 this.setPosition(x, y);
@@ -89,8 +96,8 @@ Game.Mixins.destructible = {
         this.hp -= damageAmount;
         // if the hp are now 0 or less, remove us from the map
         if (this.hp <= 0) {
-            Game.sendMessage(attacker, String.format('You kill the %s!', this.name));
-            Game.sendMessage(this, String.format('You have been slain by the %s!', attacker.name));
+            Game.sendMessage(attacker, "You kill the %s!", this.name);
+            Game.sendMessage(this, "You have been slain by the %s!", attacker.name);
 
             // check if it was the player that died, if so call player.act() to prompt the
             // user to exit to the lose screen
@@ -119,8 +126,8 @@ Game.Mixins.attacker = {
             var maxDmg = Math.max(0, attack - defense);
             var damage = 1 + Math.floor(Math.random() * maxDmg);
 
-            Game.sendMessage(this, String.format('You strike the %s for %s damage!', target.name, damage));
-            Game.sendMessage(target, String.format('The %s strikes you for %s damage!', this.name, damage));
+            Game.sendMessage(this, "You strike the %s for %s damage!", target.name, damage);
+            Game.sendMessage(target, "The %s strikes you for %s damage!", this.name, damage);
 
             target.takeDamage(this, 'blunt', damage);
         }
@@ -144,7 +151,68 @@ Game.Mixins.sight = {
 
 Game.Mixins.holdsInventory = {
     holdsInventory: true,
-
+    getInventory: function() {
+        return this.inventory;
+    },
+    getItem: function(i) {
+        return this.inventory[i];
+    },
+    addItem: function(item) {
+        // try to find a free inventory slot, return true only if
+        // the item was successfully added
+        for (var i = 0; i < this.inventory.length; i++) {
+            if (!this.inventory[i]) {
+                this.inventory[i] = item;
+                return true;
+            }
+        }
+        return false;
+    },
+    removeItem: function(i) {
+        // simply clear the inventory slot
+        this.inventory[i] = null;
+    },
+    canAddItem: function() {
+        // check if we have an empty slot
+        for (var i = 0; i < this.inventory.length; i++) {
+            if (!this.inventory[i]) {
+                return true;
+            }
+        }
+        return false;
+    },
+    pickupItems: function(indices) {
+        // allows the user to pick up items from the map, where indices
+        // is the indices for the array returned by level.getItemsAt
+        var mapItems = this.level.getItemsAt(this.x, this.y);
+        var added = 0;
+        // iterate through all indices
+        for (var i = 0; i < indices.length; i++) {
+            // try to add the item. If our inventory is not full, then splice
+            // the item out of the list of items. In order to fetch the right
+            // item, we have to offset the number of items already added.
+            if (this.addItem(mapItems[indices[i] - added])) {
+                mapItems.splice(indices[i] - added, 1);
+                added++;
+            } else {
+                // inventory is full
+                break;
+            }
+        }
+        // update the map items
+        this.level.setItemsAt(this.x, this.y, mapItems);
+        // return true only if we added all items
+        return (added === indices.length);
+    },
+    dropItem: function(i) {
+        // drops an item to the current map tile
+        if (this.inventory[i]) {
+            if (this.level) {
+                this.level.addItem(this.x, this.y, this.inventory[i]);
+            }
+            this.removeItem(i);
+        }
+    }
 };
 
 

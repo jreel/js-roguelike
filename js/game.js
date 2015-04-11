@@ -29,7 +29,10 @@ var Game = {
     init: function() {
         // Any necessary initialization will go here.
         this.display = new ROT.Display({width: this.screenWidth,
-                                         height: this.screenHeight + 1});
+                                        height: this.screenHeight + 1,
+                                        fontSize: 18,
+                                        //fontFamily: "Segoe UI Symbol",
+                                        forceSquareRatio: true});
 
         // Create a helper function for binding to an event
         // and making it send that event to the screen

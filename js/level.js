@@ -101,7 +101,7 @@ Game.Level.prototype.populateMap = function(population) {
     // TODO: monster table based on level type
 
     // make an array from our templates object
-    var templates = Object.keys(Game.MonsterTemplates);
+    // var templates = Object.keys(Game.Templates.Monsters);
     for (var p = 0; p < population; p++) {
         // randomly select a template
         /*
@@ -113,13 +113,6 @@ Game.Level.prototype.populateMap = function(population) {
         this.addEntityAtRandomPosition(monster);
         // this.addEntityAtRandomPosition(new Game.Creature(Game.MonsterTemplates[monster]));
     }
-    // TODO: this is a rewrite of the above code using the repository system
-    /*
-    for (var p = 0; p < population; p++) {
-        var entity = Game.EntityRepository.createRandom();
-        this.addEntityAtRandomPosition(entity);
-    }
-    */
 
     // add random items for now
     // average 1 item per monster, with a std around 5.

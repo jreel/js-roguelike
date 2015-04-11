@@ -30,6 +30,7 @@ Game.Player = function(template) {
 
     // TODO: how should sightRadius be handled for variable fov?
     this.sightRadius = template['sightRadius'] || 6;
+    this.inventory = new Array(template['inventorySlots'] || 22);
 
     // Instantiate any of our own properties from the passed args
     this.turnNumber = 0;        // incremented after each turn (in screens.js input handler)
@@ -46,6 +47,7 @@ augment(Game.Player, Game.Mixins.destructible);
 augment(Game.Player, Game.Mixins.attacker);
 augment(Game.Player, Game.Mixins.actor);
 augment(Game.Player, Game.Mixins.messageRecipient);
+augment(Game.Player, Game.Mixins.holdsInventory);
 
 // overrides generic actor mixin
 Game.Player.prototype.act = function() {

@@ -15,7 +15,7 @@ Game.Repository = function(name, cnstr, collection) {
 
     if (collection) {
         var coll = Object.keys(collection);
-        for (k = 0; k < coll.length; k++) {
+        for (var k = 0; k < coll.length; k++) {
             var tempName = coll[k];
             this._templates[tempName] = collection[tempName];
         }

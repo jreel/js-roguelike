@@ -5,16 +5,22 @@
 
 Game.Templates.Items = {
 
-    apple: {
-        name: 'apple',
-        character: '%',
-        foreground: 'red'
+    mushroom: {
+        name: 'mushroom',
+        character: '⍾',
+        foreground: '#784'
     },
 
-    rock: {
+    rocknroll: {
         name: 'rock',
         character: '*',
-        foreground: 'gray'
+        foreground: '#678'
+    },
+
+    apple: {
+        name: 'apple',
+        character: 'Ó',
+        foreground: '#f00'
     }
 
 };

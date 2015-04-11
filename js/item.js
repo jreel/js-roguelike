@@ -34,6 +34,7 @@ Game.Item = function(template) {
 Game.Item.extend(Game.Glyph);
 
 // do items get or need mixins? those are usually for actions/behaviors
+// TODO: items which have holdsInventory mixin = containers!
 
 /* other methods */
 
