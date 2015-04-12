@@ -139,8 +139,13 @@ Game.Mixins.messageRecipient = {
     messages: [],
     receiveMessage: function(message) {
         this.messages.push(message);
+        // clear old messages
+        if (this.messages.length > Game.msgScreenHeight) {
+            this.messages.shift();
+        }
     },
     clearMessages: function() {
+        this.messages.length = 0;
         this.messages = [];
     }
 };

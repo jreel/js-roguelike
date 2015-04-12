@@ -51,6 +51,7 @@ augment(Game.Player, Game.Mixins.holdsInventory);
 
 // overrides generic actor mixin
 Game.Player.prototype.act = function() {
+
     // detect if the game is over
     // TODO: party system
     if (this.hp < 1) {
@@ -64,7 +65,8 @@ Game.Player.prototype.act = function() {
     // for the player to press a key
     Game.currentLevel.engine.lock();
     // clear the message queue
-    this.clearMessages();
+    // this.clearMessages();
+
 };
 
 

@@ -7,7 +7,8 @@
  * http://ondras.github.io/rot.js/hp/
  */
 
-// TODO: additional displays
+// DONE?: additional displays
+// TODO: status screens for party, etc. - still a long way off
 Game.Screen = {};
 
 // Define our initial start screen
@@ -29,7 +30,7 @@ Game.Screen.startScreen = {
         // TODO: mouse input
         if (inputType === 'keydown') {
             if (inputData.keyCode === ROT.VK_RETURN) {
-                Game.switchScreen(Game.Screen.playScreen);
+                Game.switchScreen(Game.Screen.playScreen, 'main');
             }
         }
     }
@@ -156,9 +157,9 @@ Game.Screen.playScreen = {
                 }
             }
         }
-
+/*
         // Get the messages in the queue and render them
-        // TODO: separate display area for messages
+        // DONE: separate display area for messages
         var messages = this.player.messages;
         var messageOut = 0;
         for (var m = 0; m < messages.length; m++) {
@@ -169,7 +170,7 @@ Game.Screen.playScreen = {
                 '%c{white}%b{black}' + messages[m]
             );
         }
-
+*/
         // Render player HP
         // TODO: separate display area for player stats
         var stats = '%c{white}%b{black}';
@@ -182,10 +183,12 @@ Game.Screen.playScreen = {
         // if the game is over, player can press Enter to go to the losing screen.
         if (this.gameOver) {
             if (inputType === 'keydown' && inputData.keyCode === ROT.VK_RETURN) {
-                Game.switchScreen(Game.Screen.loseScreen);
+                Game.switchScreen(Game.Screen.loseScreen, 'main');
+                /*
                 if (Game.currentLevel.engine._lock > 0) {
                     Game.currentLevel.engine.unlock();
                 }
+                */
             }
             return;
         }
@@ -291,6 +294,34 @@ Game.Screen.playScreen = {
 
 };
 
+Game.Screen.messageScreen = {
+    enter: function() {
+
+    },
+    exit: function() {
+
+    },
+    render: function(display) {
+        // Get the messages in the queue and render them
+        if (!Game.thePlayer || (Game.thePlayer === null)) {
+            return;
+        }
+        var messages = Game.thePlayer.messages;
+        var messageOut = 0;
+        for (var m = 0; m < messages.length; m++) {
+            // draw each message, adding the number of lines
+            messageOut += display.drawText(
+                0,
+                messageOut,
+                '%c{white}%b{black}' + messages[m]
+            );
+        }
+    },
+    handleInput: function(inputType, inputData) {
+
+    }
+};
+
 // Define our winning screen
 // TODO: define and implement actual win conditions
 Game.Screen.winScreen = {
@@ -320,23 +351,32 @@ Game.Screen.winScreen = {
 Game.Screen.loseScreen = {
     enter: function() {
         // console.log("Entered lose screen.");
+        Game.thePlayer.clearMessages();
+        Game.displays.msg.clear();
     },
     exit: function() {
         // console.log("Exited lose screen.");
+        Game.thePlayer.clearMessages();
+        Game.displays.msg.clear();
     },
     render: function(display) {
         // TODO: make this more aesthetic, maybe add more stats
         for (var i = 0; i < 20; i++) {
             display.drawText(2, i + 1, "%b{red}You lose! :(");
         }
+        /*
         display.drawText(2, Game.screenHeight - 2, "Turns Taken: " + Game.thePlayer.turnNumber);
         display.drawText(2, Game.screenHeight - 1, "Furthest Level Reached: " + Game.thePlayer.furthestLevel);
         display.drawText(2, Game.screenHeight, "Press [Enter] to go back to the start screen if you want to try again!");
+        */
+        Game.sendMessage(Game.thePlayer, "Turns Taken: " + Game.thePlayer.turnNumber);
+        Game.sendMessage(Game.thePlayer, "Furthest Level Reached: " + Game.thePlayer.furthestLevel);
+        Game.sendMessage(Game.thePlayer, "Press [Enter] to go back to the start screen if you want to try again!");
     },
     handleInput: function(inputType, inputData) {
         // TODO: mouse input
         if (inputType === 'keydown' && inputData.keyCode === ROT.VK_RETURN) {
-            Game.switchScreen(Game.Screen.startScreen);
+            Game.switchScreen(Game.Screen.startScreen, 'main');
         }
     }
 };
@@ -407,7 +447,7 @@ Game.Screen.ItemListScreen.prototype.executeOkFunction = function() {
         }
     }
     // switch back to the play screen
-    // TODO: separate display
+    // TODO: separate display?
     Game.Screen.playScreen.setSubScreen(undefined);
     // call the OK function and end the player's turn if it returned true
     if (this.okFunction(selectedItems)) {
@@ -422,7 +462,7 @@ Game.Screen.ItemListScreen.prototype.handleInput = function(inputType, inputData
         if (inputData.keyCode === ROT.VK_ESCAPE ||
             (inputData.keyCode === ROT.VK_RETURN &&
              (!this.canSelect || Object.keys(this.selectedIndices).length === 0))) {
-            // TODO: separate display
+            // TODO: separate display?
             Game.Screen.playScreen.setSubScreen(undefined);
         } else if (inputData.keyCode === ROT.VK_RETURN) {
             // handle pressing return when items are selected
