@@ -9,15 +9,19 @@
 
 // TODO: different tilesets, possibly repository system?
 Game.Tile = function(properties) {
-    properties = properties || {};
-    // Call the Glyph constructor with our properties
+    var defaults = {
+        isWalkable: false,
+        isDiggable: false,
+        isTransparent: false,
+        canSpawnHere: false
+    };
+
+    // apply defaults into our template where needed
+    properties = applyDefaults(properties, defaults);
+
+    // Call the Glyph constructor with the composite properties
     Game.Glyph.call(this, properties);
 
-    // Set up defaults for the properties.
-    this.isWalkable = properties['isWalkable'] || false;
-    this.isDiggable = properties['isDiggable'] || false;
-    this.isTransparent = properties['isTransparent'] || false;
-    this.canSpawnHere = properties['canSpawnHere'] || false;
 };
 
 // Make tiles inherit all the functionality from glyphs

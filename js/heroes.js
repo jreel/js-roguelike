@@ -14,9 +14,19 @@ Game.HeroTemplates = {
         character: '@',
         foreground: '#fff',
         background: '#000',
-        maxHP: 5,
-        baseAttackValue: 10,
-        sightRadius: 6,
-        inventorySlots: 22
+
+        // mixins
+        destructible: {
+            maxHP: 50
+        },
+        attacker: {
+            baseAttackValue: 10
+        },
+        sight: {
+            sightRadius: 6
+        },
+        holdsInventory: {
+            inventorySlots: 22
+        }
     }
 };

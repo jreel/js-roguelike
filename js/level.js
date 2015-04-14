@@ -3,25 +3,38 @@
  */
 
 Game.Level = function (params) {
-    params = params || {};
-    this.level = params['level'] || 0;
-    this.width = params['width'] || Game.screenWidth * 2;
-    this.height = params['height'] || Game.screenHeight * 2;
-    this.type = params['type'] || null;                             //  TODO: type of level/map
-    this.map = params['map'] || null;                               // holds Game.Map object
+    var defaults = {
+        level: 0,
+        width: Game.screenWidth * 2,
+        height: Game.screenHeight * 2,
+        type: null,                         //  TODO: type of level/map
+        map: null,                           // holds Game.Map object
+        fov: null
+    };
 
-    this.scheduler = params['scheduler'] || new ROT.Scheduler.Simple();
-    this.engine = params['engine'] || new ROT.Engine(this.scheduler);
+    // apply defaults into the params where needed
+    params = applyDefaults(params, defaults);
+    // and set them up on this level
+    var props = Object.keys(params);
+    for (var i = 0; i < props.length; i++) {
+        var prop = props[i];
+        if (!this.hasOwnProperty(prop)) {
+            this[prop] = params[prop];
+        }
+    }
+
+    // Set up additional necessary properties
+    this.scheduler = new ROT.Scheduler.Simple();
+    this.engine = new ROT.Engine(this.scheduler);
 
     // holds tile positions of level entrance & exit; overridden by this.placeExits()
     this.connections = {prevLevel: {x: 0, y: 0},
                         nextLevel: {x: this.width, y: this.height}};
 
     this.lastVisit = null;                  // to simulate turns if player leaves & comes back later
-    this.fov = params['fov'] || null;
 
-    this.entities = params['entities'] || {};               // table to hold entities on this level, stored by position
-    this.items = params['items'] || {};                     // table to hold items on this level
+    this.entities = {};               // table to hold entities on this level, stored by position
+    this.items = {};                     // table to hold items on this level
 };
 
 /* Map generation & population functions */
@@ -248,7 +261,8 @@ Game.Level.prototype.getEntitiesWithinRadius = function(centerX, centerY, radius
     // Iterate through our entities, adding any which are within the bounds
     var ents = Object.keys(this.entities);
     for (var e = 0; e < ents.length; e++) {
-        var entity = ents[e];
+        var entKey = ents[e];
+        var entity = this.entities[entKey];
         if (entity.x >= leftX && entity.x <= rightX &&
             entity.y >= topY && entity.y <= bottomY) {
             results.push(entity);

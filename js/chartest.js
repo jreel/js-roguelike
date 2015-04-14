@@ -95,9 +95,9 @@ Test.charsets = {
               "%c{darkolivegreen}⍾ Ω Ϙ",
 
     cheese: "a wedge of cheese:\n\r" +
-            "%c{yellow}⪨ ⪦ ⪩\n\r" +
-            "%c{gold}⪨ ⪦ ⪩\n\r" +
-            "%c{orange}⪨ ⪦ ⪩",
+            "%c{yellow}⪨ ⪦ ⪩ ⌔\n\r" +
+            "%c{gold}⪨ ⪦ ⪩ ⌔\n\r" +
+            "%c{orange}⪨ ⪦ ⪩ ⌔",
 
     cake: "a slice of cake:\n\r" +
           "⪨ ⪦ ⪩ ⪀ ⫺ ⪄ \n\r" +

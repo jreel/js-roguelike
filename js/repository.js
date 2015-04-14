@@ -11,29 +11,53 @@
 Game.Repository = function(name, cnstr, collection) {
     this._name = name;
     this._templates = {};
+    this._randomTemplates = {};
     this._cnstr = cnstr;
 
     if (collection) {
         var coll = Object.keys(collection);
         for (var k = 0; k < coll.length; k++) {
-            var tempName = coll[k];
-            this._templates[tempName] = collection[tempName];
+            var template = coll[k];
+            this._templates[template] = collection[template];
+            if (!collection[template]['noRandom']) {
+                this._randomTemplates[template] = collection[template];
+            }
         }
     }
 };
 
-// Define a new named template
+// add a new named template
 Game.Repository.prototype.define = function(name, template) {
     this._templates[name] = template;
+    if (!template['noRandom']) {
+        this._randomTemplates[name] = template;
+    }
 };
 
 // Create an object based on a template
-Game.Repository.prototype.create = function(name) {
+Game.Repository.prototype.create = function(name, extraProperties) {
     // Make sure there is a template with the given name.
-    var template = this._templates[name];
-
-    if (!template) {
+    if (!this._templates[name]) {
         throw new Error("No template named '" + name + "' in repository '" + this._name + "'");
+    }
+
+    // copy the template to apply extraProperties if needed
+    // var template = Object.create(this._templates[name]);
+    // apply any extra properties
+    /*
+    if (extraProperties) {
+        for (var key in extraProperties) {
+            if (extraProperties.hasOwnProperty(key)) {
+                template[key] = extraProperties[key];
+            }
+        }
+    }
+    */
+    var template;
+    if (extraProperties) {
+        template = copyWithChanges(this._templates[name], extraProperties);
+    } else {
+        template = this._templates[name];
     }
 
     // Create the object, passing the template as an argument
@@ -41,11 +65,11 @@ Game.Repository.prototype.create = function(name) {
 };
 
 // Create an object based on a random template
-Game.Repository.prototype.createRandom = function() {
+Game.Repository.prototype.createRandom = function randObj() {
     // Pick a random key and create an object based off of it.
     // TODO: implement tables / weighted random
-    var temps = Object.keys(this._templates);
-    temps = temps.randomize();
-    var obj = temps.random();
+    var templates = Object.keys(this._randomTemplates);
+    templates = templates.randomize();
+    var obj = templates.random();
     return this.create(obj);
 };

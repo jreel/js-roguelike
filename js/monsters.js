@@ -4,13 +4,43 @@
 
 Game.Templates.Monsters = {
 
+    /* The defaults from the Game.Creature constructor;
+        these will be used if not defined in a template
+
+     var defaults = {
+         name: "creature",
+         description: "This is an alien-like creature.",
+         isHostile: true,        // since most creatures will be
+
+         // mixin-specific properties
+         movable: true,
+         actor: true,
+         destructible: {
+             maxHP: 10,
+             baseDefenseValue: 0
+         },
+         attacker: {
+             baseAttackValue: 1
+         },
+         sight: {
+             sightRadius: 5
+         },
+         corpseDropper: {
+             corpseDropRate: 100
+         }
+     };
+     */
+
     fungus: {
         name: 'fungus',
         character: 'F',
         foreground: '#682',     // close to "olive drab"
-        maxHP: 10,
-        attackValue: 0,
-        isAttacker: false,
+        destructible: {
+            maxHP: 10
+        },
+        attacker: false,
+        sight: false,
+        corpseDropper: false,
         growthRemaining: 5,    // fungus will try to grow each turn
         // TODO: could this be implemented as a simple array or chance table?
         // we'd need to change this in mixins.act as well.
@@ -21,8 +51,13 @@ Game.Templates.Monsters = {
         name: 'bat',
         character: 'B',
         foreground: '#431',     // dark brown
-        maxHP: 5,
-        attackValue: 4,
+        destructible: {
+            maxHP: 5
+        },
+        attacker: {
+            baseAttackValue: 4
+        },
+        sight: false,
         behaviors: {wanderer: Game.Behaviors.wanderer}
     },
 
@@ -30,8 +65,12 @@ Game.Templates.Monsters = {
         name: 'newt',
         character: 'n',
         foreground: '#ff0',
-        maxHP: 3,
-        attackValue: 2,
+        destructible: {
+            maxHP: 3
+        },
+        attacker: {
+            baseAttackValue: 2
+        },
         behaviors: {wanderer: Game.Behaviors.wanderer}
     }
 };

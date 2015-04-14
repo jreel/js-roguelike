@@ -7,33 +7,26 @@
  */
 
 Game.Entity = function Entity(properties) {
-    properties = properties || {};
+    var defaults = {
+        name: "entity",
+        description: "This is either a creature-like object, or an object-like creature.",
+        x: 0,
+        y: 0,
+        level: null,
+        isAlive: true
+    };
 
-    // Call the glyph's constructor with our set of properties
-    Game.Glyph.call(this, properties);
+    // apply defaults into our template where needed
+    properties = applyDefaults(properties, defaults);
 
-    // Instantiate any properties from the passed args
-    this.name = properties['name'] || 'entity';
-    this.description = properties['description'] || 'Who knows what this thing is?';
-    this.x = properties['x'] || 0;
-    this.y = properties['y'] || 0;
-    this.level = properties['level'] || null;
+    // Call the glyph's constructor with composite template
+    Game.DynamicGlyph.call(this, properties);
 
-    this.isLiving = properties['isLiving'] || true;
-    this.canBePickedUp = properties['canBePickedUp'] || false;
-    this.canBeDropped = properties['canBeDropped'] || false;
-
-    // TODO: creature inventories
-//    this.inventorySlots = template['inventorySlots'] || 10;
 
 };
-Game.Entity.extend(Game.Glyph);
-
-// add mixins
-augment(Game.Entity, Game.Mixins.destructible);
+Game.Entity.extend(Game.DynamicGlyph);
 
 
-/* other methods */
 Game.Entity.prototype.setPosition = function(x, y) {
     var oldX = this.x;
     var oldY = this.y;
@@ -46,11 +39,21 @@ Game.Entity.prototype.setPosition = function(x, y) {
     }
 };
 
+Game.Entity.prototype.kill = function(message) {
+    // only kill once!
+    if (!this.isAlive) {
+        return;
+    }
+    this.isAlive = false;
+    Game.sendMessage('danger', this, message ? message : "You have died!");
 
-Game.Entity.prototype.destroy = function() {
-    // clean-up routines
-    // Game.currentLevel.removeEntity(this);
-    this.level.removeEntity(this);
+    // check if it was the player who died, and if so
+    // call their act method to handle things
+    if (this === Game.thePlayer) {
+        this.act();
+    } else {
+        this.level.removeEntity(this);
+    }
 };
 
 

@@ -5,42 +5,60 @@
 
 Game.Templates.Items = {
 
+    corpse: {
+        name: 'corpse',
+        character: '%',
+        edible: {
+            foodValue: 75
+        },
+        noRandom: true
+    },
+
     mushroom: {
         name: 'mushroom',
         character: '⍾',
-        foreground: '#784'
+        foreground: '#784',
+        edible: {
+            foodValue: 20
+        }
     },
 
-    rocknroll: {
+    rock: {
         name: 'rock',
         character: '*',
-        foreground: '#678'
+        foreground: '#678',
+        edible: false
     },
 
     apple: {
         name: 'apple',
         character: 'Ó',
-        foreground: '#f00'
+        foreground: '#f00',
+        edible: {
+            foodValue: 40
+        }
+    },
+
+    cheese: {
+        name: 'piece of cheese',
+        character: '⪩',
+        foreground: '#fc0',
+        edible: {
+            foodValue: 50
+        }
+    },
+
+    cheesewheel: {
+        name: 'wheel of cheese',
+        character: '◶',
+        foreground: '#fc0',
+        edible: {
+            foodValue: 50,
+            portions: 8
+        }
     }
 
 };
 
 Game.ItemRepository = new Game.Repository('items', Game.Item, Game.Templates.Items);
 
-
-/* see the reasoning for this in the similar section in monsters.js */
-
-/*
-Game.ItemRepository.define('apple', {
-    name: 'apple',
-    character: '%',
-    foreground: 'red'
-});
-
-Game.ItemRepository.define('rock', {
-    name: 'rock',
-    character: '*',
-    foreground: 'white'
-});
-
-*/

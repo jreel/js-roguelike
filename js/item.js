@@ -5,51 +5,27 @@
 /*  ITEM = non-living, non-scripted thing; no actions or behaviors. */
 
 Game.Item = function(template) {
-    template = template || {};
-    // Call the Glyph constructor with our properties
-    Game.Glyph.call(this, template);
+    var defaults = {
+        name: "item",
+        description: "This is an unusual item of unknown origin."
 
-    this.name = template['name'] || "item";
-    this.description = template['description'] || "This is an unusual item of unknown origin.";
+    };
 
-    // Instantiate any properties from the passed args
-    // Game.Item was originally a child (now a sibling) of Game.Entity, and
-    // so most of the properties are the same
-    this.isDestructible = template['destructible'] || true;
-    this.canMove = template['canMove'] || false;
-    this.isLiving = template['isLiving'] || false;
-    this.canBePickedUp = template['canBePickedUp'] || true;
-    this.canBeDropped = template['canBeDropped'] || true;
+    // apply defaults into our template where needed
+    template = applyDefaults(template, defaults);
 
-    // Instantiate any of our own properties from the passed args
-    this.wearable = template['wearable'] || false;
-    this.wieldable = template['wieldable'] || false;
-    this.isWeapon = template['isWeapon'] || false;
-    this.isArmor = template['isArmor'] || false;
-    this.stackLimit = template['stackLimit'] || 1;
-    this.durability = template['durability'] || 1;
-    this.weight = template['weight'] || 1;
+    // Call the Glyph constructor with composite template
+    // this should also handle applying any mixins
+    Game.DynamicGlyph.call(this, template);
+
+    // Set up any of our own properties that still need it
 
 };
-Game.Item.extend(Game.Glyph);
+Game.Item.extend(Game.DynamicGlyph);
 
-// do items get or need mixins? those are usually for actions/behaviors
-// TODO: items which have holdsInventory mixin = containers!
 
-/* other methods */
+// TODO: items with the holdsInventory mixin = containers!
 
-Game.Item.prototype.nameA = function(capitalize) {
-    // optional parameter to capitalize the a/an
-    var prefixes = capitalize? ['A', 'An'] : ['a', 'an'];
-    var string = this.name;
-    var firstLetter = string.charAt(0);
-    firstLetter = firstLetter.toLowerCase();
-
-    // if word starts with a vowel use 'an', else use 'a'.
-    // (note that this is not perfect.)
-    var prefix = 'aeiou'.indexOf(firstLetter) >= 0 ? 1 : 0;
-    return prefixes[prefix] + ' ' + string;
-};
 
 
 

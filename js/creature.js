@@ -4,26 +4,49 @@
 
 // also see monsters.js
 Game.Creature = function(template) {
-    template = template || {};
-    // Call the Entity constructor with our properties
+    var defaults = {
+        name: "creature",
+        description: "This is an alien-like creature.",
+        isHostile: true,        // since most creatures will be
+
+        // mixin-specific properties
+        movable: true,
+        actor: true,
+        destructible: {
+            maxHP: 10,
+            baseDefenseValue: 0
+        },
+        attacker: {
+            baseAttackValue: 1
+        },
+        sight: {
+            sightRadius: 5
+        },
+        corpseDropper: {
+            corpseDropRate: 100
+        }
+
+    };
+
+    // apply defaults into our template where needed
+    template = applyDefaults(template, defaults);
+
+    /*
+    var keys = Object.keys(defaults);
+    for (var k = 0; k < keys.length; k++) {
+        var key = keys[k];
+        if (!template.hasOwnProperty(key)) {
+            template[key] = defaults[key];
+        }
+    }
+    */
+
+    // Call the Entity constructor with composite template
+    // this should also handle applying any mixins
     Game.Entity.call(this, template);
 
-    this.name = template['name'] || "creature";
-    this.description = template['description'] || "This is an alien-like creature.";
-
-    // Set defaults for inherited Entity properties
-
-    this.isLiving = template['isLiving'] || true;
-    this.canBePickedUp = template['canBePickedUp'] || false;
-    this.canBeDropped = template['canBeDropped'] || false;
-
-    // Instantiate any of our own properties from the passed args
-    this.isHostile = template['isHostile'] || true;   // since most creatures will be
-    this.maxHP = template['maxHP'] || 10;
-    this.hp = template['hp'] || this.maxHP;
-    this.defense = template['defense'] || 0;
-    this.baseAttackValue = template['baseAttackValue'] || 1;
-    this.sightRadius = template['sightRadius'] || 5;
+    // Set up any of our own properties that need it
+    // this.hp = template['hp'] || this.maxHP;
 
     if (template['behaviors'] && template['behaviors'] !== {}) {
         this.behaviors = template['behaviors'];
@@ -33,8 +56,12 @@ Game.Creature = function(template) {
 // Make creatures inherit all functionality of entities
 Game.Creature.extend(Game.Entity);
 
-// add mixins
+// apply mixins that all creatures should have
+/*
 augment(Game.Creature, Game.Mixins.movable);
 augment(Game.Creature, Game.Mixins.destructible);
 augment(Game.Creature, Game.Mixins.attacker);
 augment(Game.Creature, Game.Mixins.actor);
+augment(Game.Creature, Game.Mixins.dropsCorpse);
+*/
+
