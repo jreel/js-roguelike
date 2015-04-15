@@ -283,6 +283,7 @@ Game.Mixins.inventoryHolder = {
             if (this.level) {
                 this.level.addItem(this.x, this.y, this.inventory[i]);
             }
+            Game.sendMessage('default', this, "You drop the %s on the ground.", this.inventory[i].name);
             this.removeItem(i);
         }
     }
@@ -306,10 +307,37 @@ Game.Mixins.foodEater = {
     modifyFullness: function(amount) {
         if (!this.eatsFood) { return; }
         this.fullness += amount;
+        var hungerPct = (this.fullness / this.maxFullness) * 100;
         if (this.fullness <= 0) {
             this.kill("You have died of starvation!");
+        } else if (hungerPct <= 5) {
+            this.hungryToken = true;
+            this.fullToken = false;
+            Game.sendMessage('danger', this, "You are starving!");
+        } else if (hungerPct <= 25) {
+            this.fullToken = false;
+            if (!this.hungryToken) {
+                Game.sendMessage('warning', this, "You feel hungry.");
+                this.hungryToken = true;
+            }
         } else if (this.fullness > this.maxFullness) {
             this.kill("Your stomach has ruptured from overeating!");
+        } else if (hungerPct >= 95) {
+            this.hungryToken = false;
+            this.fullToken = true;
+            if (!this.burstToken) {
+                this.burstToken = true;
+                Game.sendMessage('danger', this, "You have eaten so much you feel like you will burst!");
+            }
+        } else if (hungerPct >= 75) {
+            this.hungryToken = false;
+            if (!this.fullToken) {
+                Game.sendMessage('warning', this, "You feel full.");
+                this.fullToken = true;
+            }
+        } else {
+            this.hungryToken = false;
+            this.fullToken = false;
         }
     },
     getHungerState: function() {
