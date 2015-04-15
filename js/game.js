@@ -1,6 +1,6 @@
 /**
  * Created by jreel on 3/27/2015.
- * Thanks to the "Building a Roguelike in Javascript" tutorial by Dominic
+ * Based on the "Building a Roguelike in Javascript" tutorial by Dominic
  * http://www.codingcookies.com/2013/04/01/building-a-roguelike-in-javascript-part-1/
  *
  * Using the rot.js library developed by Ondrej Zara
@@ -19,7 +19,7 @@ var Game = {
         main: null,
         msg: null
     },
-    screenWidth: 50,       // this should be an EVEN number
+    screenWidth: 40,       // this should be an EVEN number
     screenHeight: 30,      // this should also be an EVEN number
     msgScreenHeight: 10,
     numLevels: 10,
@@ -120,6 +120,8 @@ window.onload = function() {
     if (ROT.isSupported()) {
         // Initialize the game
         Game.init();
+
+        //document.write("<p>" + Game.logo + "</p>");
 
         // Add the container to the HTML page
         document.body.appendChild(Game.displays.main.getContainer());

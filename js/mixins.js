@@ -1,9 +1,15 @@
 /**
  * Created by jreel on 4/4/2015.
+ * Based on the "Building a Roguelike in Javascript" tutorial by Dominic
+ * http://www.codingcookies.com/2013/04/01/building-a-roguelike-in-javascript-part-1/
+ *
+ * Using the rot.js library developed by Ondrej Zara
+ * http://ondras.github.io/rot.js/hp/
  */
 
 // Components aka "Mixins"
-// to be used with (after) constructor function
+// these can typically be used in one of two ways
+// 1. to be used with (after) a constructor function
 // called via the augment function in utility.js
 // which applies mixin properties/methods onto a class prototype
 //
@@ -17,6 +23,12 @@
 // to turn off the mixin behavior for the templated instance.
 // this means, however, that a check of the bool flag, and possible early return
 // is required for pretty much every method.
+//
+// 2. to be used in a creature/item template and thus applied only
+// to that instance. See monsters.js for example usage.
+// The mixin properties and methods will then be 'mixed in' via a
+// subroutine in the Game.DynamicGlyph constructor, which every other
+// class *should* be an instance of somewhere down the inheritance chain.
 
 // TODO: does this get moved to repository system as well?
 Game.Mixins = { };
@@ -166,7 +178,7 @@ Game.Mixins.attacker = {
             var damage = 1 + Math.floor(Math.random() * maxDmg);
 
             Game.sendMessage('default', this, "You strike the %s for %s damage!", target.name, damage);
-            Game.sendMessage('default', target, "The %s strikes you for %s damage!", this.name, damage);
+            Game.sendMessage('warning', target, "The %s strikes you for %s damage!", this.name, damage);
 
             target.takeDamage(this, 'blunt', damage);
         }
@@ -358,11 +370,17 @@ Game.Mixins.edible = {
         }
     },
     describe: function() {
-        if (this.remainingPortions < this.maxPortions) {
-            return 'partly eaten ' + Game.Item.prototype.describe.call(this);
-        } else {
+        var pctLeft = (this.remainingPortions / this.maxPortions) * 100;
+        if (pctLeft == 100) {
             return this.name;
+        } else if (pctLeft > 70) {
+            return 'partly eaten ' + Game.Item.prototype.describe.call(this);
+        } else if (pctLeft > 30) {
+            return 'half-eaten ' + Game.Item.prototype.describe.call(this);
+        } else {
+            return 'mostly eaten ' + Game.Item.prototype.describe.call(this);
         }
+
     }
 };
 
