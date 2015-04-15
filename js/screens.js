@@ -21,18 +21,34 @@ Game.Screen.startScreen = {
     },
     render: function(display) {
         // Render our prompt to the screen
-        // TODO: change to something more aesthetic
-        // TODO: figure out why I can't get my damn logo to display like I want it! >:-(
-        display.drawText(1, 1, "%c{yellow}Javascript Roguelike");
-        display.drawText(1, 2, "Press [Enter] to start!");
-        //display.draw(0, 0, Game.logo);
-        /*
-        for (var i = 0; i < Game.logoArray.length; i++) {
-            display.drawText(0, i, Game.logoArray[i], 90);
+        // DONE?: change to something more aesthetic
+
+        var logoSize = ROT.Text.measure(Game.logo);
+
+        display.setOptions({
+            width: logoSize.width + 2,
+            height: logoSize.height + 4,
+            fontSize: 14,
+            //fontFamily: "Segoe UI Symbol",
+            forceSquareRatio: false,
+            spacing: 1
+        });
+
+        var row = 1;
+        var col = 1;
+        for (var i = 0; i < Game.logo.length; i++) {
+            if (Game.logo.charAt(i) == '\n') {
+                row++;
+                col = 1;
+            } else {
+                display.draw(col, row, Game.logo.charAt(i));
+                col++;
+            }
         }
-        */
-        //display.drawText(0, 0, Game.logo, Game.screenWidth);
-        //display.drawText(0, Game.screenHeight, "A Javascript Roguelike. Press [Enter] to start.");
+        var text = "A Javascript Roguelike. Press [Enter] to start.";
+        var textSize = ROT.Text.measure(text);
+        var centerStart = (logoSize.width - textSize.width) / 2;
+        display.drawText(centerStart, logoSize.height + 3, text);
     },
     handleInput: function(inputType, inputData) {
         // When [Enter] is pressed, go to the play screen
@@ -51,7 +67,7 @@ Game.Screen.playScreen = {
     gameOver: false,
     subScreen: null,        // TODO: move subScreens to separate display
 
-    enter: function() {
+    enter: function(display) {
         // console.log("Entered play screen.");
 
         // if we are entering from the lose screen, be sure to reset
@@ -59,6 +75,15 @@ Game.Screen.playScreen = {
         if (this.gameOver) {
             this.gameOver = false;
         }
+
+        display.setOptions({
+            width: Game.screenWidth,
+            height: Game.screenHeight + 1,
+            fontSize: 18,
+            //fontFamily: "Segoe UI Symbol",
+            forceSquareRatio: true,
+            spacing: 1
+        });
 
         // generate player and world
         // TODO: player generation, party system
@@ -90,6 +115,15 @@ Game.Screen.playScreen = {
             this.subScreen.render(display);
             return;
         }
+
+        // re-set in case we just exited a subscreen
+        display.setOptions({
+            width: Game.screenWidth,
+            fontSize: 18,
+            //fontFamily: "Segoe UI Symbol",
+            forceSquareRatio: true
+        });
+
         var screenWidth = Game.screenWidth;
         var screenHeight = Game.screenHeight;
 
@@ -167,21 +201,6 @@ Game.Screen.playScreen = {
             }
         }
 
-        // Render player HP
-        // TODO: separate display area for player stats
-        /*
-        var stats = '%c{white}%b{black}';
-        stats += String.format('HP: %s/%s ', this.player.hp, this.player.maxHP);
-        display.drawText(0, screenHeight, stats);
-        */
-        var hpLabel = '%c{white}%b{black}HP: ';
-        var hpState = this.player.getHpState();
-        display.drawText(0, screenHeight, hpLabel + hpState);
-
-        // show current hunger state
-        var hungerState = this.player.getHungerState();
-        var textLength = stripTokens(hungerState).length;
-        display.drawText(screenWidth - textLength, screenHeight, hungerState);
     },
 
     handleInput: function(inputType, inputData) {
@@ -302,6 +321,50 @@ Game.Screen.playScreen = {
 
 };
 
+Game.Screen.statsLine = {
+    enter: function() {
+
+    },
+    exit: function() {
+
+    },
+    render: function(display) {
+        if (!Game.thePlayer || Game.thePlayer === null) {
+            return;
+        }
+        var hpLabel = '%c{white}%b{black}HP: ';
+        var hpState = Game.thePlayer.getHpState();
+        display.drawText(0, 0, hpLabel + hpState);
+
+        // show current hunger state
+        var hungerState = Game.thePlayer.getHungerState();
+        var textLength = stripTokens(hungerState).length;
+        var screenWidth = display.getOptions().width;
+        display.drawText(screenWidth - textLength, 0, hungerState);
+    },
+    handleInput: function(inputType, inputData) {
+
+    }
+};
+
+Game.Screen.helpLine = {
+    enter: function() {
+
+    },
+    exit: function() {
+
+    },
+    render: function(display) {
+        if (!Game.thePlayer || Game.thePlayer === null) {
+            return;
+        }
+        display.drawText(0, 0, "%c{#fff}%b{#000}[⇦⇧⇩⇨] move/attack, [Space] pick up, [I] inventory, [D] drop, [E] eat");
+    },
+    handleInput: function(inputType, inputData) {
+
+    }
+};
+
 Game.Screen.messageScreen = {
     enter: function() {
 
@@ -314,6 +377,7 @@ Game.Screen.messageScreen = {
         if (!Game.thePlayer || (Game.thePlayer === null)) {
             return;
         }
+
         var messages = Game.thePlayer.messages;
         var messageOut = 0;
         for (var m = 0; m < messages.length; m++) {
@@ -409,7 +473,8 @@ Game.Screen.loseScreen = {
 Game.Screen.ItemListScreen = function(template) {
     // set up based on the template
     this.player = Game.thePlayer;
-    this.caption = template['caption'] || "Some Items";
+    this.title = template['title'] || "Some Items";
+    this.caption = template['caption'] || "(Press [Enter] or [Esc] to close.)";
     this.okFunction = template['ok'] || null;
     // whether the user can select items at all
     this.canSelect = template['canSelect'] || false;
@@ -439,9 +504,18 @@ Game.Screen.ItemListScreen.prototype.setup = function(player, items) {
     return count;
 };
 Game.Screen.ItemListScreen.prototype.render = function(display) {
+
+    display.setOptions({
+        fontSize: 16,
+        forceSquareRatio: false
+    });
+    var availSize = display.computeSize(Game.windowWidth, Game.windowHeight);
+    display.setOptions({width: availSize[0]});
+
+
     var letters = 'abcdefghijklmnopqrstuvwxyz';
     // render the caption in the top row
-    display.drawText(0, 0, this.caption);
+    display.drawText(1, 1, this.title);
     var row = 0;
     for (var i = 0; i < this.items.length; i++) {
         if (this.items[i]) {
@@ -451,16 +525,17 @@ Game.Screen.ItemListScreen.prototype.render = function(display) {
             // between the letter and the item's name
             var selectionState = (this.canSelect && this.canSelectMultiple &&
                 this.selectedIndices[i]) ? '+' : '-';
-            // render at the correct row and add 2.
+            // render at the correct row and add 3 (title + blank line).
             // for some reason, stringing this all together into a single drawText argument results in
             // mis-aligned text in the display.
-            display.draw(0, 2 + row, letter);
-            display.draw(2, 2 + row, selectionState);
-            display.draw(4, 2 + row, this.items[i].character, this.items[i].foreground, this.items[i].background);
-            display.drawText(6, 2 + row, this.items[i].describeA());
+            display.draw(1, 3 + row, letter);
+            display.draw(3, 3 + row, selectionState);
+            display.draw(5, 3 + row, this.items[i].character, this.items[i].foreground, this.items[i].background);
+            display.drawText(7, 3 + row, this.items[i].describeA());
             row++;
         }
     }
+    display.drawText(1, 5 + row, this.caption);
 };
 Game.Screen.ItemListScreen.prototype.executeOkFunction = function() {
     // gather the selected items
@@ -519,12 +594,14 @@ Game.Screen.ItemListScreen.prototype.handleInput = function(inputType, inputData
 
 /* define screens based on ItemListScreen */
 Game.Screen.inventoryScreen = new Game.Screen.ItemListScreen({
-    caption: 'Your Inventory:',
+    title: 'Your Inventory:',
+    caption: '(press [Enter] or [Esc] to close)',
     canSelect: false
 });
 
 Game.Screen.pickupScreen = new Game.Screen.ItemListScreen({
-    caption: 'Select Items to Pick Up:',
+    title: 'Select Items to Pick Up:',
+    caption: '(letter key to select, \n[Enter] confirm, [Esc] cancel)',
     canSelect: true,
     canSelectMultiple: true,
     ok: function(selectedItems) {
@@ -538,7 +615,8 @@ Game.Screen.pickupScreen = new Game.Screen.ItemListScreen({
 });
 
 Game.Screen.dropScreen = new Game.Screen.ItemListScreen({
-    caption: 'Select Items to Drop:',
+    title: 'Select Item to Drop:',
+    caption: '(letter key to drop item, \n[Enter] or [Esc] to cancel)',
     canSelect: true,
     canSelectMultiple: false,           // should this be true?
     ok: function(selectedItems) {
@@ -549,7 +627,8 @@ Game.Screen.dropScreen = new Game.Screen.ItemListScreen({
 });
 
 Game.Screen.eatScreen = new Game.Screen.ItemListScreen({
-    caption: 'Choose Item to Eat:',
+    title: 'Choose Item to Eat:',
+    caption: '(letter key to eat item, \n[Enter] or [Esc] to cancel)',
     canSelect: true,
     canSelectMultiple: false,
     filter: function(item) {
