@@ -1,5 +1,10 @@
 /**
  * Created by jreel on 4/4/2015.
+ * Based on the "Building a Roguelike in Javascript" tutorial by Dominic
+ * http://www.codingcookies.com/2013/04/01/building-a-roguelike-in-javascript-part-1/
+ *
+ * Using the rot.js library developed by Ondrej Zara
+ * http://ondras.github.io/rot.js/hp/
  */
 
 Game.World = function(depth) {
@@ -12,10 +17,10 @@ Game.World = function(depth) {
         var rndlvl = this.randomLevel();
         this.levels[z] = new Game.Level({
                 level: z,
-//                width: rndlvl.width,
-//                height: rndlvl.height
-                width: Game.screenWidth,        // comment out these two lines and uncomment
-                height: Game.screenHeight       // the above two, to restore pseudo-random map size
+                width: rndlvl.width,
+                height: rndlvl.height
+                //width: Game.screenWidth,        // comment out these two lines and uncomment
+                //height: Game.screenHeight       // the above two, to restore pseudo-random map size
             });
         var map = this.levels[z].generateMap();
         this.levels[z].map = new Game.Map(map);

@@ -1,6 +1,6 @@
 /**
  * Created by jreel on 3/27/2015.
- * Thanks to the "Building a Roguelike in Javascript" tutorial by Dominic
+ * Based on the "Building a Roguelike in Javascript" tutorial by Dominic
  * http://www.codingcookies.com/2013/04/01/building-a-roguelike-in-javascript-part-1/
  *
  * Using the rot.js library developed by Ondrej Zara
@@ -22,8 +22,17 @@ Game.Screen.startScreen = {
     render: function(display) {
         // Render our prompt to the screen
         // TODO: change to something more aesthetic
+        // TODO: figure out why I can't get my damn logo to display like I want it! >:-(
         display.drawText(1, 1, "%c{yellow}Javascript Roguelike");
         display.drawText(1, 2, "Press [Enter] to start!");
+        //display.draw(0, 0, Game.logo);
+        /*
+        for (var i = 0; i < Game.logoArray.length; i++) {
+            display.drawText(0, i, Game.logoArray[i], 90);
+        }
+        */
+        //display.drawText(0, 0, Game.logo, Game.screenWidth);
+        //display.drawText(0, Game.screenHeight, "A Javascript Roguelike. Press [Enter] to start.");
     },
     handleInput: function(inputType, inputData) {
         // When [Enter] is pressed, go to the play screen
@@ -171,7 +180,8 @@ Game.Screen.playScreen = {
 
         // show current hunger state
         var hungerState = this.player.getHungerState();
-        display.drawText(screenWidth - hungerState.length, screenHeight, hungerState);
+        var textLength = stripTokens(hungerState).length;
+        display.drawText(screenWidth - textLength, screenHeight, hungerState);
     },
 
     handleInput: function(inputType, inputData) {
@@ -311,7 +321,7 @@ Game.Screen.messageScreen = {
             messageOut += display.drawText(
                 0,
                 messageOut,
-                '%c{white}%b{black}' + messages[m]
+                '%c{#fff}%b{#000}' + messages[m]
             );
         }
     },
@@ -549,7 +559,13 @@ Game.Screen.eatScreen = new Game.Screen.ItemListScreen({
         // eat the item, removing it if no portions remain
         var key = Object.keys(selectedItems)[0];
         var item = selectedItems[key];
-        Game.sendMessage('default', this.player, "You eat %s.", item.describeThe());
+        if (item.remainingPortions < item.maxPortions && item.remainingPortions === 1) {
+            Game.sendMessage('default', this.player, "You finish off the %s.", item.name);
+        } else if (item.remainingPortions > 1) {
+            Game.sendMessage('default', this.player, "You eat some of the %s.", item.name);
+        } else {
+            Game.sendMessage('default', this.player, "You eat the %s.", item.name);
+        }
         item.eat(this.player);
         if (item.remainingPortions <= 0) {
             this.player.removeItem(key);

@@ -1,6 +1,6 @@
 /**
  * Created by jreel on 3/27/2015.
- * Thanks to the "Building a Roguelike in Javascript" tutorial by Dominic
+ * Based on the "Building a Roguelike in Javascript" tutorial by Dominic
  * http://www.codingcookies.com/2013/04/01/building-a-roguelike-in-javascript-part-1/
  *
  * Using the rot.js library developed by Ondrej Zara
