@@ -27,7 +27,7 @@ Game.Screen.startScreen = {
 
         display.setOptions({
             width: logoSize.width + 2,
-            height: logoSize.height + 4,
+            height: logoSize.height + 10,
             fontSize: 14,
             //fontFamily: "Segoe UI Symbol",
             forceSquareRatio: false,
@@ -45,10 +45,13 @@ Game.Screen.startScreen = {
                 col++;
             }
         }
-        var text = "A Javascript Roguelike. Press [Enter] to start.";
-        var textSize = ROT.Text.measure(text);
-        var centerStart = (logoSize.width - textSize.width) / 2;
-        display.drawText(centerStart, logoSize.height + 3, text);
+        var introtext = ["%c{#8ff}A Javascript Roguelike", "", "%c{#888}(currently in pre-alpha development -", "%c{#888}there's not really a \"Tower\" yet!)", "", "%c{#ff8}Press [Enter] to start."];
+        for (t = 0; t < introtext.length; t++) {
+            var textSize = ROT.Text.measure(introtext[t]);
+            var centerStart = (logoSize.width - textSize.width) / 2;
+            display.drawText(centerStart, logoSize.height + 3 + t, introtext[t]);
+        }
+
     },
     handleInput: function(inputType, inputData) {
         // When [Enter] is pressed, go to the play screen
