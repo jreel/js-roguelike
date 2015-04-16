@@ -5,3 +5,6 @@ http://www.codingcookies.com/2013/04/01/building-a-roguelike-in-javascript-part-
 
 And using the rot.js library developed by Ondrej Zara
 http://ondras.github.io/rot.js/hp/
+
+Demo (current version) available for play at
+http://jreel.github.io/Js-Roguelike-Tutorial/

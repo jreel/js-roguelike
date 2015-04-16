@@ -89,6 +89,7 @@ var Game = {
                     // Send the event type and data to the screen
                     game.currentScreens.main.handleInput(event, e);
                 }
+                e.stopPropagation();
             });
         };
         // Bind keyboard input events
