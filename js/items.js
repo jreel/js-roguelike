@@ -71,10 +71,10 @@ Game.Templates.Items = {
         character: '⍭',
         foreground: '#888',
         equippable: {
-            attackValue: 5,
+            attackValue: 4,
             isWieldable: true
-        },
-        noRandom: true
+        }
+        //noRandom: true
     },
 
     sword: {
@@ -82,10 +82,10 @@ Game.Templates.Items = {
         character: '〆',
         foreground: '#fff',
         equippable: {
-            attackValue: 10,
+            attackValue: 6,
             isWieldable: true
-        },
-        noRandom: true
+        }
+        //noRandom: true
     },
 
     staff: {
@@ -96,8 +96,8 @@ Game.Templates.Items = {
             attackValue: 5,
             defenseValue: 1,
             isWieldable: true
-        },
-        noRandom: true
+        }
+        //noRandom: true
     },
 
     // Wearables
@@ -109,8 +109,8 @@ Game.Templates.Items = {
         equippable: {
             defenseValue: 2,
             isWearable: true
-        },
-        noRandom: true
+        }
+        //noRandom: true
     },
 
     chainmail: {
@@ -120,8 +120,8 @@ Game.Templates.Items = {
         equippable: {
             defenseValue: 4,
             isWearable: true
-        },
-        noRandom: true
+        }
+        //noRandom: true
     },
 
     platearmor: {
@@ -131,8 +131,8 @@ Game.Templates.Items = {
         equippable: {
             defenseValue: 6,
             isWearable: true
-        },
-        noRandom: true
+        }
+        //noRandom: true
     },
 
     spikyarmor: {
@@ -141,10 +141,10 @@ Game.Templates.Items = {
         foreground: "#800",
         equippable: {
             attackValue: 1,
-            defenseValue: 6,
+            defenseValue: 5,
             isWearable: true
-        },
-        noRandom: true
+        }
+        //noRandom: true
     },
 
     // weird items

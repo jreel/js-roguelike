@@ -131,7 +131,7 @@ Game.Level.prototype.populateMap = function(population) {
         this.addEntityAtRandomPosition(monster);
         // level up the new entity automatically based on the game level
         if (monster.gainsExperience) {
-            for (var lvl = 1; lvl < this.level; lvl++) {
+            for (var lvl = 0; lvl < this.level; lvl++) {
                 monster.giveExperience(monster.getNextLevelExperience() - monster.experience);
             }
         }
@@ -139,10 +139,10 @@ Game.Level.prototype.populateMap = function(population) {
     }
 
     // add random items (mainly food right now)
-    // average 1 item per every 1.5 monsters, with a std around 5.
+    // average 1 item per every 2 monsters, with a std around 5.
     // TODO: item table based on level type?
     var itemStd = randomNormalInt(5, 1);
-    var itemPop = randomNormalInt(Math.floor(population / 1.5), itemStd);
+    var itemPop = randomNormalInt(Math.floor(population / 2), itemStd);
     for (var i = 0; i < itemPop; i++) {
         var item = Game.ItemRepository.createRandom();
         this.addItemAtRandomPosition(item);

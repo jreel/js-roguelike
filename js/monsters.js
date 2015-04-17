@@ -57,7 +57,7 @@ Game.Templates.Monsters = {
         sight: false,
         corpseDropper: false,
         growthRemaining: 5,    // fungus will try to grow each turn
-        growPctChance: 2,     // 2% chance to grow
+        growPctChance: 1,     // % chance to grow
         speed: 1,
         // TODO: could this be implemented as a simple array or chance table?
         // we'd need to change this in mixins.act as well.

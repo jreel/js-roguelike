@@ -140,14 +140,14 @@ Game.Mixins.destructible = {
         this.hp = hp;
     },
     increaseDefenseValue: function(amount) {
-        // if no amount was passed, default to +2
-        amount = amount || 2;
+        // if no amount was passed, default to +1
+        amount = amount || 1;
         this.defense += amount;
         Game.sendMessage('info', this, "You feel tougher!");
     },
     increaseMaxHp: function(amount) {
-        // if no amount was passed, default to +10
-        amount = amount || 10;
+        // if no amount was passed, default to +5
+        amount = amount || 5;
         // add to both current (hp) and maxHP
         this.maxHP += amount;
         this.hp += amount;
@@ -241,8 +241,8 @@ Game.Mixins.attacker = {
         return this.attackValue + modifier;
     },
     increaseAttackValue: function(amount) {
-        // if no value was passed, default to +2
-        amount = amount || 2;
+        // if no value was passed, default to +1
+        amount = amount || 1;
         this.attackValue += amount;
         Game.sendMessage('info', this, "You feel stronger!");
     },
