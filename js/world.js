@@ -30,12 +30,14 @@ Game.World = function(depth) {
 
     // we can also distribute random 'special' items throughout the world here
     // for now, we'll just add one of each weapon and armor randomly
+    /*
     var itemTemplates = ['dagger', 'sword', 'staff', 'leathervest', 'chainmail', 'platearmor', 'spikyarmor'];
     for (var j = 0; j < itemTemplates.length; j++) {
         var specialItem = Game.ItemRepository.create(itemTemplates[j]);
         var randlevel = randomInt(1, this.depth);
         this.levels[randlevel].addItemAtRandomPosition(specialItem);
     }
+    */
 };
 
 Game.World.prototype.randomLevel = function(params) {
