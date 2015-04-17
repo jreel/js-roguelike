@@ -18,7 +18,8 @@ Game.Entity = function Entity(properties) {
         x: 0,
         y: 0,
         level: null,
-        isAlive: true
+        isAlive: true,
+        speed: 1
     };
 
     // apply defaults into our template where needed
@@ -30,6 +31,10 @@ Game.Entity = function Entity(properties) {
 
 };
 Game.Entity.extend(Game.DynamicGlyph);
+
+Game.Entity.prototype.getSpeed = function() {       // required for ROT.Scheduler.Speed
+    return this.speed;
+};
 
 
 Game.Entity.prototype.setPosition = function(x, y) {

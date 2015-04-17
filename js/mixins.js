@@ -101,13 +101,30 @@ Game.Mixins.movable = {
 Game.Mixins.actor = {
     isActor: true,
     act: function() {
-        if (!this.isActor) { return; }
-        if (this.behaviors && (this.behaviors !== {})) {
+        if (!this.isActor) { return false; }
+        if (this.behaviors && (this.behaviors !== [])) {
+            // uncomment this if you change behaviors back to an object
+            /*
             var behaviorsArray = Object.keys(this.behaviors);
             behaviorsArray = behaviorsArray.randomize();        // mix 'em up
             var rnd = randomInt(0, behaviorsArray.length - 1);
             var rndKey = behaviorsArray[rnd];
             this.behaviors[rndKey](this);
+            */
+
+            // iterate through behaviors array
+            for (var i = 0; i < this.behaviors.length; i++) {
+                var behavior = this.behaviors[i];
+                // try to perform the behavior.
+                // behavior functions should return true or false
+                // depending on whether they were successfully executed.
+                // if true, then we are done; exit the function.
+                // if not, then we continue the loop and try the next behavior.
+                var success = Game.Behaviors[behavior](this);
+                if (success) {
+                    return true;
+                }
+            }
         }
     }
 };
@@ -118,6 +135,37 @@ Game.Mixins.destructible = {
         this.maxHP = template['maxHP'] || 10;
         this.hp = template['hp'] || this.maxHP;
         this.defense = template['baseDefenseValue'] || 0;
+    },
+    setHp: function(hp) {
+        this.hp = hp;
+    },
+    increaseDefenseValue: function(amount) {
+        // if no amount was passed, default to +2
+        amount = amount || 2;
+        this.defense += amount;
+        Game.sendMessage('info', this, "You feel tougher!");
+    },
+    increaseMaxHp: function(amount) {
+        // if no amount was passed, default to +10
+        amount = amount || 10;
+        // add to both current (hp) and maxHP
+        this.maxHP += amount;
+        this.hp += amount;
+        Game.sendMessage('info', this, "You feel healthier!");
+    },
+    getDefenseValue: function() {
+        var modifier = 0;
+        // if we can equip items, then we should take into account
+        // our weapons and armor
+        if (this.canWearArmor || this.canWieldWeapons) {
+            if (this.weapon) {
+                modifier += this.weapon.defenseValue;
+            }
+            if (this.armor) {
+                modifier += this.armor.defenseValue;
+            }
+        }
+        return this.defense + modifier;
     },
     takeDamage: function(attacker, damageType, damageAmount) {
         if (!this.isDestructible) { return; }
@@ -138,6 +186,22 @@ Game.Mixins.destructible = {
             // (this is now checked in Game.Entity.kill() method)
             // TODO: support for party system
             this.kill(message);
+
+            // give the attacker experience points
+            if (attacker.gainsExperience) {
+                var exp = this.maxHP + this.getDefenseValue();
+                if (this.isAttacker) {
+                    exp += this.getAttackValue();
+                }
+                // account for level differences
+                if (this.gainsExperience) {
+                    exp -= (attacker.explevel - this.explevel) * 3;
+                }
+                // only give exp if greater than 0
+                if (exp > 0) {
+                    attacker.giveExperience(exp);
+                }
+            }
         }
     },
     getHpState: function() {
@@ -162,6 +226,26 @@ Game.Mixins.attacker = {
     init: function(template) {
         this.attackValue = template['baseAttackValue'] || 1;
     },
+    getAttackValue: function() {
+        var modifier = 0;
+        // if we can equip items, then we should take into account
+        // our weapons and armor
+        if (this.canWearArmor || this.canWieldWeapons) {
+            if (this.weapon) {
+                modifier += this.weapon.attackValue;
+            }
+            if (this.armor) {
+                modifier += this.armor.attackValue;
+            }
+        }
+        return this.attackValue + modifier;
+    },
+    increaseAttackValue: function(amount) {
+        // if no value was passed, default to +2
+        amount = amount || 2;
+        this.attackValue += amount;
+        Game.sendMessage('info', this, "You feel stronger!");
+    },
     willAttack: function(target) {
         if (!this.isAttacker) { return false; }
         return (this.isHostile ? !target.isHostile : target.isHostile)
@@ -172,12 +256,19 @@ Game.Mixins.attacker = {
         // based on attack and defense values
         // TODO: probably a total re-write based on weapons, etc.
         if (target.isDestructible) {
-            var attack = this.attackValue;
-            var defense = target.defense;
+            var attack = this.getAttackValue();
+            var defense = target.getDefenseValue();
             var maxDmg = Math.max(0, attack - defense);
             var damage = 1 + Math.floor(Math.random() * maxDmg);
 
-            Game.sendMessage('default', this, "You strike the %s for %s damage!", target.name, damage);
+            var weapon;
+            if (this.weapon) {
+                weapon = this.weapon.name;
+            } else {
+                weapon = "bare fists";
+            }
+
+            Game.sendMessage('default', this, "You strike the %s with your %s for %s damage!", target.name, weapon, damage);
             Game.sendMessage('warning', target, "The %s strikes you for %s damage!", this.name, damage);
 
             target.takeDamage(this, 'blunt', damage);
@@ -206,10 +297,39 @@ Game.Mixins.messageRecipient = {
 };
 
 Game.Mixins.sight = {
-
     hasSight: true,
     init: function(template) {
         this.sightRadius = template['sightRadius'] || 5;
+    },
+    increaseSightRadius: function(amount) {
+        // if no amount passed default to 1
+        amount = amount || 1;
+        this.sightRadius += amount;
+        Game.sendMessage('info', this, "You feel more aware!");
+    },
+    canSee: function(entity) {
+        // if not on the same level, then exit early
+        if (!entity || this.level !== entity.level) {
+            return false;
+        }
+        // if we're not in a square field of view, then we won't be in a real
+        // field of view either (this is to save FOV computation if it's not needed)
+        var squareX = (entity.x - this.x) * (entity.x - this.x);
+        var squareY = (entity.y - this.y) * (entity.y - this.y);
+        if ((squareX + squareY) > (this.sightRadius * this.sightRadius)) {
+            return false;
+        }
+        // compute the FOV and check if coordinates are within
+        var found = false;
+        this.level.fov.compute(
+            this.x, this.y,
+            this.sightRadius,
+            function(x, y, radius, visibility) {
+                if (x === entity.x && y === entity.y) {
+                    found = true;
+                }
+            });
+        return found;
     }
 };
 
@@ -239,6 +359,12 @@ Game.Mixins.inventoryHolder = {
     },
     removeItem: function(i) {
         if (!this.holdsInventory) { return; }
+        // if we can equip items, we want to make sure we unequip
+        // the item we are removing if we need to
+        if (this.inventory[i] && (this.canWearArmor || this.canWieldWeapons)) {
+            this.unequip(this.inventory[i]);
+        }
+
         // simply clear the inventory slot
         this.inventory[i] = null;
     },
@@ -285,6 +411,14 @@ Game.Mixins.inventoryHolder = {
             }
             Game.sendMessage('default', this, "You drop the %s on the ground.", this.inventory[i].name);
             this.removeItem(i);
+        }
+    },
+    unequip: function(item) {
+        if (this.weapon === item) {
+            this.unwield();
+        }
+        if (this.armor === item) {
+            this.takeOff();
         }
     }
 };
@@ -360,17 +494,115 @@ Game.Mixins.foodEater = {
 Game.Mixins.corpseDropper = {
     dropsCorpse: true,
     init: function(template) {
-        this.corpseDropRate = template['corpseDropRate'] || 100;
+        this.corpseDropChance = template['corpseDropChance'] || 100;
     },
     tryDropCorpse: function() {
         if (!this.dropsCorpse) { return; }
-        if (ROT.RNG.getPercentage() < this.corpseDropRate) {
+        if (ROT.RNG.getPercentage() < this.corpseDropChance) {
             // create a new corpse item and drop it
             var deadThing = this;
             var corpse = Game.ItemRepository.create('corpse',
                         { name: deadThing.name + ' corpse',
                         foreground: deadThing.foreground });
             this.level.addItem(this.x, this.y, corpse);
+        }
+    }
+};
+
+Game.Mixins.armorUser = {
+    canWearArmor: true,
+    init: function(template) {
+        this.armor = template['startingArmor'] || null;
+    },
+    wear: function(item) {
+        this.armor = item;
+    },
+    takeOff: function() {
+        this.armor = null;
+    }
+};
+
+Game.Mixins.weaponUser = {
+    canWieldWeapons: true,
+    init: function(template) {
+        this.weapon = template['startingWeapon'] || null;
+    },
+    wield: function(item) {
+        this.weapon = item;
+    },
+    unwield: function() {
+        this.weapon = null;
+    }
+};
+
+Game.Mixins.experienceGainer = {
+    gainsExperience: true,
+    init: function(template) {
+        this.explevel = template['explevel'] || 1;
+        this.experience = template['experience'] || 0;
+        this.statPointsPerLevel = template['statPointsPerLevel'] || 1;
+        this.statPoints = 0;
+        // determine what stats can be levelled up
+        this.statOptions = [];
+        if (this.isAttacker) {
+            this.statOptions.push(['Increase attack value', this.increaseAttackValue]);
+        }
+        if (this.isDestructible) {
+            this.statOptions.push(['Increase defense value', this.increaseDefenseValue]);
+            this.statOptions.push(['Increase max health', this.increaseMaxHp]);
+        }
+        if (this.hasSight) {
+            this.statOptions.push(['Increase sight range', this.increaseSightRadius]);
+        }
+    },
+    getNextLevelExperience: function() {
+        return (this.explevel * this.explevel) * 10;
+    },
+    giveExperience: function(points) {
+        var statPointsGained = 0;
+        var levelsGained = 0;
+        // loop until all points have been allocated
+        while (points > 0) {
+            // check if adding in the points will surpass the level threshold
+            if (this.experience + points >= this.getNextLevelExperience()) {
+                // fill our experience until the next level threshold
+                var usedPoints = this.getNextLevelExperience() - this.experience;
+                points -= usedPoints;
+                this.experience += usedPoints;
+                // level up!
+                this.explevel++;
+                levelsGained++;
+                this.statPoints += this.statPointsPerLevel;
+                statPointsGained += this.statPointsPerLevel;
+            } else {
+                // simple case - just give the experience
+                this.experience += points;
+                points = 0;
+            }
+        }
+        // check if we gained at least one level
+        if (levelsGained > 0) {
+            Game.sendMessage('info', this, "You feel more experienced!");
+            // heal the entity if possible
+            if (this.isDestructible) {
+                this.hp = this.maxHP;
+            }
+            this.gainStats();
+        }
+    },
+    gainStats: function() {
+        if (this === Game.thePlayer) {
+            // setup the gains stat screen and show it
+            Game.Screen.gainStatScreen.setup(this);
+            Game.Screen.playScreen.setSubScreen(Game.Screen.gainStatScreen);
+        } else {
+            // randomly select a stat option and execute the callback for each stat point
+            while (this.statPoints > 0) {
+                // call the stat increasing function with this as the context
+                var statOption = this.statOptions.random();
+                statOption[1].call(this);
+                this.statPoints--;
+            }
         }
     }
 };
@@ -412,5 +644,13 @@ Game.Mixins.edible = {
     }
 };
 
-
+Game.Mixins.equippable = {
+    isEquippable: true,
+    init: function(template) {
+        this.attackValue = template['attackValue'] || 0;
+        this.defenseValue = template['defenseValue'] || 0;
+        this.isWieldable = template['isWieldable'] || false;
+        this.isWearable = template['isWearable'] || false;
+    }
+};
 

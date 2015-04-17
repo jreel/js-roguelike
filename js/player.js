@@ -19,7 +19,7 @@ Game.Player = function(template) {
         isHostile: false,
 
         isActor: true,      // since we don't need the generic actor mixin
-
+        speed: 5,
         // mixin-specific properties
         movable: true,
         //actor: true,
@@ -40,7 +40,10 @@ Game.Player = function(template) {
         foodEater: {
             maxFullness: 1000,
             hungerRate: 1
-        }
+        },
+        armorUser: true,
+        weaponUser: true,
+        experienceGainer: true
     };
 
     // apply defaults into our template where needed
@@ -81,7 +84,7 @@ Game.Player.prototype.act = function() {
     this.addHunger();
     // detect if the game is over
     if (!this.isAlive) {
-        Game.Screen.playScreen.setGameOver(true);
+        Game.setGameOver(true);
         // send a last message
         Game.sendMessage('danger', this, 'You have died! :( Press [Enter] to continue.');
     }

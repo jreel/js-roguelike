@@ -129,14 +129,20 @@ Game.Level.prototype.populateMap = function(population) {
         // switched to the repository system here
         var monster = Game.MonsterRepository.createRandom();
         this.addEntityAtRandomPosition(monster);
-        // this.addEntityAtRandomPosition(new Game.Creature(Game.MonsterTemplates[monster]));
+        // level up the new entity automatically based on the game level
+        if (monster.gainsExperience) {
+            for (var lvl = 1; lvl < this.level; lvl++) {
+                monster.giveExperience(monster.getNextLevelExperience() - monster.experience);
+            }
+        }
+
     }
 
-    // add random items for now
-    // average 1 item per monster, with a std around 5.
+    // add random items (mainly food right now)
+    // average 1 item per every 1.5 monsters, with a std around 5.
     // TODO: item table based on level type?
     var itemStd = randomNormalInt(5, 1);
-    var itemPop = randomNormalInt(population, itemStd);
+    var itemPop = randomNormalInt(Math.floor(population / 1.5), itemStd);
     for (var i = 0; i < itemPop; i++) {
         var item = Game.ItemRepository.createRandom();
         this.addItemAtRandomPosition(item);
@@ -212,6 +218,11 @@ Game.Level.prototype.simulateTurns = function(numTurns) {
 
 
 /* Entity handling functions */
+Game.Level.prototype.getPlayer = function() {
+    return Game.thePlayer;
+};
+
+
 Game.Level.prototype.addEntity = function(entity) {
     // Make sure the entity's position is within bounds
     if (entity.x < 0 || entity.x >= this.map.width ||
@@ -282,7 +293,7 @@ Game.Level.prototype.updateEntityPosition = function(entity, oldX, oldY, oldLeve
     // if an oldLevel is specified, delete from that level and add to this level
     // otherwise, delete from this level and re-add to this level
     var whichLevel = oldLevel || this;
-    if (oldX) {
+    if (typeof oldX === 'number') {
         var oldKey = oldX + ',' + oldY;
         if (whichLevel.entities[oldKey] === entity) {
             delete whichLevel.entities[oldKey];

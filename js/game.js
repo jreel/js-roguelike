@@ -33,6 +33,7 @@ var Game = {
     // TODO: extra players, player creation routine
     thePlayer: null,
     theWorld: null,
+    gameOver: false,
 
     Templates: {
         Monsters: null,
@@ -70,7 +71,7 @@ var Game = {
         this.displays.stats = new ROT.Display({
                                     width: this.screenWidth,
                                     height: 1,
-                                    fontSize: 16,
+                                    fontSize: 14,
                                     fontStyle: 'bold',
                                     forceSquareRatio: false
                                     });
@@ -170,6 +171,11 @@ var Game = {
             this.currentScreens[display].enter(this.displays[display]);
             this.refresh();
         }
+    },
+
+
+    setGameOver: function(gameLost) {
+        this.gameOver = gameLost;
     }
 };
 

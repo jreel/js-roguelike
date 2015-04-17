@@ -15,13 +15,15 @@ Game.Templates.Monsters = {
      var defaults = {
          name: "creature",
          description: "This is an alien-like creature.",
-         isHostile: true,        // since most creatures will be
+         isHostile: true,     // since most creatures will be
+         speed: 5,
 
          // mixin-specific properties
          movable: true,
          actor: true,
          destructible: {
              maxHP: 10,
+             hp: 10     // defaults to maxHP
              baseDefenseValue: 0
          },
          attacker: {
@@ -31,8 +33,15 @@ Game.Templates.Monsters = {
              sightRadius: 5
          },
          corpseDropper: {
-             corpseDropRate: 100
-         }
+             corpseDropChance: 100
+         },
+
+         // other mixins typically reserved for Player
+         messageRecipient: false,
+         inventoryHolder: false,    // {inventorySlots: 10}
+         foodEater: false,      // {maxFullness: 1000, hungerRate: 1}
+         armorUser: false,
+         weaponUser: false
      };
      */
 
@@ -41,15 +50,18 @@ Game.Templates.Monsters = {
         character: 'F',
         foreground: '#682',     // close to "olive drab"
         destructible: {
-            maxHP: 10
+            maxHP: 1,
+            baseDefenseValue: 0
         },
         attacker: false,
         sight: false,
         corpseDropper: false,
         growthRemaining: 5,    // fungus will try to grow each turn
+        growPctChance: 2,     // 2% chance to grow
+        speed: 1,
         // TODO: could this be implemented as a simple array or chance table?
         // we'd need to change this in mixins.act as well.
-        behaviors: {fungalGrowth: Game.Behaviors.fungalGrowth}
+        behaviors: ['fungalGrowth']
     },
 
     bat: {
@@ -60,10 +72,11 @@ Game.Templates.Monsters = {
             maxHP: 5
         },
         attacker: {
-            baseAttackValue: 4
+            baseAttackValue: 2
         },
         sight: false,
-        behaviors: {wanderer: Game.Behaviors.wanderer}
+        speed: 10,
+        behaviors: ['wander']
     },
 
     newt: {
@@ -74,9 +87,31 @@ Game.Templates.Monsters = {
             maxHP: 3
         },
         attacker: {
-            baseAttackValue: 2
+            baseAttackValue: 1
         },
-        behaviors: {wanderer: Game.Behaviors.wanderer}
+        sight: {
+            sightRadius: 3
+        },
+        speed: 8,
+        behaviors: ['wander']
+    },
+
+    kobold: {
+        name: 'kobold',
+        character: 'k',
+        foreground: '#4d8',
+        destructible: {
+            maxHP: 8,
+            baseDefenseValue: 1
+        },
+        attacker: {
+            baseAttackValue: 3
+        },
+        sight: {
+            sightRadius: 5
+        },
+        speed: 7,
+        behaviors: ['hunt', 'wander']       // hunt the player if in range, otherwise wander
     }
 };
 

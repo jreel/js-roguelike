@@ -13,6 +13,7 @@ Game.Creature = function(template) {
         name: "creature",
         description: "This is an alien-like creature.",
         isHostile: true,        // since most creatures will be
+        speed: 5,
 
         // mixin-specific properties
         movable: true,
@@ -28,8 +29,9 @@ Game.Creature = function(template) {
             sightRadius: 5
         },
         corpseDropper: {
-            corpseDropRate: 100
-        }
+            corpseDropChance: 100
+        },
+        experienceGainer: true      // so they can automatically get more difficult as player progresses
 
     };
 
@@ -50,8 +52,6 @@ Game.Creature = function(template) {
     // this should also handle applying any mixins
     Game.Entity.call(this, template);
 
-    // Set up any of our own properties that need it
-    // this.hp = template['hp'] || this.maxHP;
 
     if (template['behaviors'] && template['behaviors'] !== {}) {
         this.behaviors = template['behaviors'];
