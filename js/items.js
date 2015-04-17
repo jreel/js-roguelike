@@ -12,6 +12,7 @@ Game.Templates.Items = {
 
     corpse: {
         name: 'corpse',
+        //character: '☠',
         character: '%',
         edible: {
             foodValue: 75
@@ -60,6 +61,117 @@ Game.Templates.Items = {
         edible: {
             foodValue: 50,
             portions: 8
+        }
+    },
+
+    // Weapons
+
+    dagger: {
+        name: 'dagger',
+        character: '⍭',
+        foreground: '#888',
+        equippable: {
+            attackValue: 5,
+            isWieldable: true
+        },
+        noRandom: true
+    },
+
+    sword: {
+        name: 'sword',
+        character: '〆',
+        foreground: '#fff',
+        equippable: {
+            attackValue: 10,
+            isWieldable: true
+        },
+        noRandom: true
+    },
+
+    staff: {
+        name: 'staff',
+        character: '⌠',
+        foreground: "#940",
+        equippable: {
+            attackValue: 5,
+            defenseValue: 1,
+            isWieldable: true
+        },
+        noRandom: true
+    },
+
+    // Wearables
+
+    leathervest: {
+        name: 'leather vest',
+        character: 'ᗨ',
+        foreground: "#940",
+        equippable: {
+            defenseValue: 2,
+            isWearable: true
+        },
+        noRandom: true
+    },
+
+    chainmail: {
+        name: 'chainmail',
+        character: 'ᗨ',
+        foreground: "#999",
+        equippable: {
+            defenseValue: 4,
+            isWearable: true
+        },
+        noRandom: true
+    },
+
+    platearmor: {
+        name: 'plate armor',
+        character: 'ᗨ',
+        foreground: "#aad",
+        equippable: {
+            defenseValue: 6,
+            isWearable: true
+        },
+        noRandom: true
+    },
+
+    spikyarmor: {
+        name: 'spiky armor',
+        character: '♊',
+        foreground: "#800",
+        equippable: {
+            attackValue: 1,
+            defenseValue: 6,
+            isWearable: true
+        },
+        noRandom: true
+    },
+
+    // weird items
+
+    pumpkin: {
+        name: 'pumpkin',
+        character: 'ტ',
+        foreground: "#f60",
+        edible: {
+            foodValue: 60
+        },
+        equippable: {
+            defenseValue: 1,
+            isWearable: true
+        }
+    },
+
+    meatstick: {
+        name: 'haunch of meat',
+        character: 'ዖ',
+        foreground: "#820",
+        edible: {
+            foodValue: 50
+        },
+        equippable: {
+            attackValue: 1,
+            isWieldable: true
         }
     }
 

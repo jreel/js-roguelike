@@ -22,10 +22,10 @@ Game.HeroTemplates = {
 
         // mixins
         destructible: {
-            maxHP: 50
+            maxHP: 20
         },
         attacker: {
-            baseAttackValue: 10
+            baseAttackValue: 3
         },
         sight: {
             sightRadius: 6
