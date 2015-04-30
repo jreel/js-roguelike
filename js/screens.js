@@ -31,7 +31,9 @@ Game.Screen.startScreen = {
             fontSize: 14,
             //fontFamily: "Segoe UI Symbol",
             forceSquareRatio: false,
-            spacing: 1
+            spacing: 1,
+            fg: '#ccc',
+            bg: '#000'
         });
 
         var row = 1;
@@ -45,7 +47,12 @@ Game.Screen.startScreen = {
                 col++;
             }
         }
-        var introtext = ["%c{#8ff}A Javascript Roguelike", "", "%c{#888}(currently in pre-alpha development -", "%c{#888}there's not really a \"Tower\" yet!)", "", "%c{#ff8}Press [Enter] to start."];
+        var introtext = ["%c{#8ff}A Javascript Roguelike",
+                         "",
+                         "%c{#888}(currently in pre-alpha development -",
+                         "%c{#888}there's not really a \"Tower\" yet!)",
+                         "",
+                         "%c{#ff8}Press [Enter] to start."];
         for (t = 0; t < introtext.length; t++) {
             var textSize = ROT.Text.measure(introtext[t]);
             var centerStart = (logoSize.width - textSize.width) / 2;
@@ -68,12 +75,14 @@ Game.Screen.startScreen = {
 Game.Screen.playScreen = {
     player: null,           // TODO: party system
     subScreen: null,        // TODO: move subScreens to separate display
+    area: null,
 
     enter: function(display) {
         // console.log("Entered play screen.");
 
         // if we are entering from the lose screen, be sure to reset
         // the gameOver flag
+        // TODO: this may need changing if we implement player character creation
         if (Game.gameOver) {
             Game.gameOver = false;
         }
@@ -87,24 +96,9 @@ Game.Screen.playScreen = {
             spacing: 1
         });
 
-        // generate player and world
-        // TODO: player generation, party system
-        Game.thePlayer = new Game.Player(Game.HeroTemplates.default);
-        this.player = Game.thePlayer;
-        Game.theWorld = new Game.World(Game.numLevels);
-
-        // set and populate the current level
-        Game.currentLevel = Game.theWorld.levels[1];
-        Game.currentLevel.populateMap();    // population = random normal based on map size
-        Game.thePlayer.level = Game.currentLevel;
-
-        // Start the current level engine
-        Game.currentLevel.engine.start();
-        /*
-        if (Game.currentLevel.engine._lock > 0) {
-            Game.currentLevel.engine.unlock();
-        }
-        */
+        Game.startNewGame();
+        this.player = Game.player;
+        this.area = Game.currentWorld.currentArea;
     },
 
     exit: function() {
@@ -129,10 +123,11 @@ Game.Screen.playScreen = {
         var screenWidth = Game.screenWidth;
         var screenHeight = Game.screenHeight;
 
-        var level = Game.currentLevel;
+        var area = Game.currentWorld.currentArea;
+        this.area = area;       // so other methods can use it too
 
-        var mapWidth = level.map.width;
-        var mapHeight = level.map.height;
+        var mapWidth = area.width;
+        var mapHeight = area.height;
 
         var playerX = this.player.x;
         var playerY = this.player.y;
@@ -150,8 +145,8 @@ Game.Screen.playScreen = {
         // Find all visible map cells based on FOV or previous visit
         // TODO: different FOV for different map types
         var visibleCells = {};
-        var map = level.map;
-        level.fov.compute(
+        var map = area.map;
+        area.fov.compute(
             playerX, playerY,
             this.player.sightRadius,
             function(x, y, radius, visibility) {
@@ -174,11 +169,11 @@ Game.Screen.playScreen = {
                         // check for entities first, since they should
                         // be drawn on top of items
                         // TODO: refactor based on proper stacking order for future tile graphics
-                        if (level.getEntityAt(x, y)) {
-                            glyph = level.getEntityAt(x, y);
-                        } else if (level.getItemsAt(x, y)) {
+                        if (area.getEntityAt(x, y)) {
+                            glyph = area.getEntityAt(x, y);
+                        } else if (area.getItemsAt(x, y)) {
                             // if we have items, render the topmost one
-                            var items = level.getItemsAt(x, y);
+                            var items = area.getItemsAt(x, y);
                             glyph = items[items.length - 1];
                         } else {
                             glyph = map.getTile(x, y);
@@ -255,8 +250,9 @@ Game.Screen.playScreen = {
                 return;
             }
             // Unlock the engine
-            this.player.turnNumber++;
-            Game.currentLevel.engine.unlock();
+            //this.player.trackers.turnsTaken++;
+            this.player.raiseEvent('onTurnTaken');
+            this.area.engine.unlock();
         }
     },
 
@@ -264,16 +260,15 @@ Game.Screen.playScreen = {
         var newX = this.player.x + dX;
         var newY = this.player.y + dY;
         // Try to move to the new cell
-        this.player.tryMove(newX, newY, Game.currentLevel);
+        this.player.tryMove(newX, newY, area);
     },
 
     activateTile: function() {
-        // TODO: should this be moved to Level or Map?
         var x = this.player.x;
         var y = this.player.y;
 
         // check for items that player wants to pick up
-        var items = Game.currentLevel.getItemsAt(x, y);
+        var items = this.area.getItemsAt(x, y);
         if (items) {
             if (items.length === 1) {
                 // if only one item, don't show a screen, just try to pick it up
@@ -291,14 +286,19 @@ Game.Screen.playScreen = {
         } else {
             // if no items, check for other functions
 
+            // TODO: implement changeArea(x, y) method
             // check for special tile
-            var tile = Game.currentLevel.map.getTile(x, y);
+            /*
+            var tile = this.area.map.getTile(x, y);
             // switch case depending on tile
             if (tile === Game.Tile.prevLevelTile) {
                 Game.currentLevel.changeLevel(-1);
             } else if (tile === Game.Tile.nextLevelTile) {
                 Game.currentLevel.changeLevel(1);
+            } else if (tile === Game.Tile.holeToCavernTile) {
+                Game.currentLevel.changeLevel(1);
             }
+            */
         }
     },
 
@@ -328,30 +328,33 @@ Game.Screen.statsLine = {
 
     },
     render: function(display) {
-        if (!Game.thePlayer || Game.thePlayer === null || Game.gameOver) {
+        if (!Game.player || Game.player === null || Game.gameOver) {
             display.clear();
             return;
         }
 
         var offset = 0;
 
-        // show current level
+        // show current area
+        // TODO: current area name?
+        /*
         var levelLabel = '%c{#fff}%b{#000}Exploring Level: ';
-        var currentLevel = Game.currentLevel.level;
+        var currentLevel = Game.currentLevel.area;
         display.drawText(offset, 0, levelLabel + currentLevel);
         offset += (ROT.Text.measure(levelLabel + currentLevel).width + 3);
+        */
 
         // show current hp
         var hpLabel = '%c{#fff}%b{#000}HP: ';
-        var hpState = Game.thePlayer.getHpState();
+        var hpState = Game.player.getHpState();
         display.drawText(offset, 0, hpLabel + hpState);
         offset += (ROT.Text.measure(hpLabel + hpState).width + 3);
 
         // show current weapon
         var weaponLabel = '%c{#fff}%b{#000}Wielding: ';
         var weaponName;
-        if (Game.thePlayer.weapon) {
-            weaponName = Game.thePlayer.weapon.name;
+        if (Game.player.weapon) {
+            weaponName = Game.player.weapon.name;
         } else {
             weaponName = 'nothing';
         }
@@ -361,8 +364,8 @@ Game.Screen.statsLine = {
         // show current armor
         var armorLabel = '%c{#fff}%b{#000}Wearing: ';
         var armorName;
-        if (Game.thePlayer.armor) {
-            armorName = Game.thePlayer.armor.name;
+        if (Game.player.armor) {
+            armorName = Game.player.armor.name;
         } else {
             armorName = 'nothing';
         }
@@ -370,9 +373,8 @@ Game.Screen.statsLine = {
         offset += (ROT.Text.measure(armorLabel + armorName).width + 3);
 
         // show current hunger state
-        var hungerState = Game.thePlayer.getHungerState();
+        var hungerState = Game.player.getHungerState();
         display.drawText(offset, 0, hungerState);
-        offset += (ROT.Text.measure(hungerState).width + 3);
 
     },
     handleInput: function(inputType, inputData) {
@@ -388,11 +390,12 @@ Game.Screen.helpLine = {
 
     },
     render: function(display) {
-        if (!Game.thePlayer || Game.thePlayer === null || Game.gameOver) {
+        if (!Game.player || Game.player === null || Game.gameOver) {
             display.clear();
             return;
         }
-        display.drawText(0, 0, "%c{#fff}%b{#000}[⇦⇧⇩⇨] move/attack, [Space] pick up, [I] inventory, [D] drop, [E] eat, [W] wear/wield");
+        display.drawText(0, 0, "%c{#fff}%b{#000}[⇦⇧⇩⇨] move/attack, " +
+                               "[Space] pick up, [I] inventory, [D] drop, [E] eat, [W] wear/wield");
     },
     handleInput: function(inputType, inputData) {
 
@@ -408,11 +411,11 @@ Game.Screen.messageScreen = {
     },
     render: function(display) {
         // Get the messages in the queue and render them
-        if (!Game.thePlayer || (Game.thePlayer === null)) {
+        if (!Game.player || (Game.player === null)) {
             return;
         }
 
-        var messages = Game.thePlayer.messages;
+        var messages = Game.player.messages;
         var messageOut = 0;
         for (var m = 0; m < messages.length; m++) {
             // draw each message, adding the number of lines
@@ -491,10 +494,20 @@ Game.Screen.winScreen = {
     },
     exit: function() {
         // console.log("Exited win screen.");
+        Game.player.clearMessages();
+        Game.displays.msg.clear();
     },
     render: function(display) {
+        display.setOptions({
+            fontSize: 16,
+            forceSquareRatio: false,
+            spacing: 1,
+            fg: '#fff',
+            bg: '#000'
+        });
+
         // Render our prompt to the screen
-        for (var i = 0; i < 22; i++) {
+        for (var i = 0; i < 12; i++) {
             // Generate random background colors
             var r = Math.round(Math.random() * 255);
             var b = Math.round(Math.random() * 255);
@@ -502,9 +515,22 @@ Game.Screen.winScreen = {
             var background = ROT.Color.toRGB([r, g, b]);
             display.drawText(2, i + 1, "%b{" + background + "}You win!");
         }
+
+        var trackers = Object.keys(Game.player.trackers);
+        for (var j = 0; j < trackers.length; j++) {
+            var trackedStat = trackers[j];
+            Game.sendMessage('info', Game.player, trackedStat + ": " + Game.player.trackers[trackedStat]);
+        }
+
+        Game.sendMessage('warning', Game.player,
+                         "Press [Enter] to go back to the start screen if you would like to play again!"
+        );
     },
     handleInput: function(inputType, inputData) {
         // Not much to do here
+        if (inputType === 'keydown' && inputData.keyCode === ROT.VK_RETURN) {
+            Game.switchScreen(Game.Screen.startScreen, 'main');
+        }
     }
 };
 
@@ -512,27 +538,48 @@ Game.Screen.winScreen = {
 Game.Screen.loseScreen = {
     enter: function() {
         // console.log("Entered lose screen.");
-        Game.thePlayer.clearMessages();
-        Game.displays.msg.clear();
+        //Game.thePlayer.clearMessages();
+        //Game.displays.msg.clear();
     },
     exit: function() {
         // console.log("Exited lose screen.");
-        Game.thePlayer.clearMessages();
+        Game.player.clearMessages();
         Game.displays.msg.clear();
     },
     render: function(display) {
         // TODO: make this more aesthetic, maybe add more stats
-        for (var i = 0; i < 20; i++) {
-            display.drawText(2, i + 1, "%b{red}You lose! :(");
+
+        var loseGraphicSize = ROT.Text.measure(Game.loseGraphic);
+
+        display.setOptions({
+            width: loseGraphicSize.width + 2,
+            height: loseGraphicSize.height + 1,
+            fontSize: 14,
+            forceSquareRatio: false,
+            spacing: 1,
+            fg: '#000',
+            bg: '#800'
+        });
+
+        var row = 1;
+        var col = 0;
+        for (var i = 0; i < Game.loseGraphic.length; i++) {
+            if (Game.loseGraphic.charAt(i) == '\n') {
+                row++;
+                col = 0;
+            } else {
+                display.draw(col, row, Game.loseGraphic.charAt(i));
+                col++;
+            }
         }
-        /*
-        display.drawText(2, Game.screenHeight - 2, "Turns Taken: " + Game.thePlayer.turnNumber);
-        display.drawText(2, Game.screenHeight - 1, "Furthest Level Reached: " + Game.thePlayer.furthestLevel);
-        display.drawText(2, Game.screenHeight, "Press [Enter] to go back to the start screen if you want to try again!");
-        */
-        Game.sendMessage('info', Game.thePlayer, "Turns Taken: %c{}" + Game.thePlayer.turnNumber);
-        Game.sendMessage('info', Game.thePlayer, "Furthest Level Reached: %c{}" + Game.thePlayer.furthestLevel);
-        Game.sendMessage('info', Game.thePlayer, "Press [Enter] to go back to the start screen if you want to try again!");
+
+        var trackers = Object.keys(Game.player.trackers);
+        for (var j = 0; j < trackers.length; j++) {
+            var trackedStat = trackers[j];
+            Game.sendMessage('info', Game.player, trackedStat + ": " + Game.player.trackers[trackedStat]);
+        }
+
+        Game.sendMessage('warning', Game.player, "Press [Enter] to go back to the start screen if you want to try again!");
     },
     handleInput: function(inputType, inputData) {
         // TODO: mouse input
@@ -561,7 +608,7 @@ Game.Screen.loseScreen = {
 */
 Game.Screen.ItemListScreen = function(template) {
     // set up based on the template
-    this.player = Game.thePlayer;
+    this.player = Game.player;
     this.title = template['title'] || "Some Items";
     this.caption = template['caption'] || "(Press [Enter] or [Esc] to close.)";
     this.okFunction = template['ok'] || null;
@@ -651,7 +698,7 @@ Game.Screen.ItemListScreen.prototype.executeOkFunction = function() {
     Game.Screen.playScreen.setSubScreen(undefined);
     // call the OK function and end the player's turn if it returned true
     if (this.okFunction(selectedItems)) {
-        this.player.level.engine.unlock();
+        this.player.area.engine.unlock();
     }
 };
 Game.Screen.ItemListScreen.prototype.handleInput = function(inputType, inputData) {

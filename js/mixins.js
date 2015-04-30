@@ -59,10 +59,13 @@ Game.Mixins.movable = {
             if (this === Game.thePlayer) {
                 // TODO: support for different tilesets
                 if (tile == Game.Tile.prevLevelTile) {
-                    Game.sendMessage('info', this, "Press [Space] to go back to level %s.", level.level - 1);
+                    Game.sendMessage('info', this, "Press [Space] to go back to level %s.", level.area - 1);
                 }
                 if (tile == Game.Tile.nextLevelTile) {
-                    Game.sendMessage('info', this, "Press [Space] to advance to level %s.", level.level + 1);
+                    Game.sendMessage('info', this, "Press [Space] to advance to level %s.", level.area + 1);
+                }
+                if (tile == Game.Tile.holeToCavernTile) {
+                    Game.sendMessage('danger', this, "There is a dark, seemingly bottomless hole here. Press [Space] to jump in!");
                 }
                 // check if we can simply walk there
                 // and if so, update our position
@@ -126,6 +129,7 @@ Game.Mixins.actor = {
                 }
             }
         }
+        return false;
     }
 };
 
@@ -135,6 +139,12 @@ Game.Mixins.destructible = {
         this.maxHP = template['maxHP'] || 10;
         this.hp = template['hp'] || this.maxHP;
         this.defense = template['baseDefenseValue'] || 0;
+    },
+    listeners: {
+        onGainLevel: function() {
+            // heal the entity
+            this.setHp(this.maxHP);
+        }
     },
     setHp: function(hp) {
         this.hp = hp;
@@ -171,15 +181,22 @@ Game.Mixins.destructible = {
         if (!this.isDestructible) { return; }
         // TODO: support for damage resistance/reduction?
         this.hp -= damageAmount;
+        this.raiseEvent('onTakeDamage', damageAmount);
         // if the hp are now 0 or less, remove us from the map
         if (this.hp <= 0) {
             Game.sendMessage('default', attacker, "You kill the %s!", this.name);
             var message = String.format("You have been slain by the %s!", attacker.name);
 
+            // Raise events
+            this.raiseEvent('onDeath', attacker);
+            attacker.raiseEvent('onKill', this);
+
+            /*  REPLACED by above code (events)
             // if entity is a corpse dropper, try to create the corpse
             if (this.dropsCorpse) {
                 this.tryDropCorpse();
             }
+            */
 
             // check if it was the player that died, if so call player.act() to prompt the
             // user to exit to the lose screen
@@ -188,12 +205,13 @@ Game.Mixins.destructible = {
             this.kill(message);
 
             // give the attacker experience points
+            /* MOVED to onKill event listener in experienceGainer mixin
             if (attacker.gainsExperience) {
                 var exp = this.maxHP + this.getDefenseValue();
                 if (this.isAttacker) {
                     exp += this.getAttackValue();
                 }
-                // account for level differences
+                // account for area differences
                 if (this.gainsExperience) {
                     exp -= (attacker.explevel - this.explevel) * 3;
                 }
@@ -202,6 +220,7 @@ Game.Mixins.destructible = {
                     attacker.giveExperience(exp);
                 }
             }
+            */
         }
     },
     getHpState: function() {
@@ -268,10 +287,11 @@ Game.Mixins.attacker = {
                 weapon = "bare fists";
             }
 
-            Game.sendMessage('default', this, "You strike the %s with your %s for %s damage!", target.name, weapon, damage);
-            Game.sendMessage('warning', target, "The %s strikes you for %s damage!", this.name, damage);
+            Game.sendMessage('default', this, "You hit the %s with your %s for %s damage!", target.name, weapon, damage);
+            Game.sendMessage('warning', target, "The %s hits you for %s damage!", this.name, damage);
 
             target.takeDamage(this, 'blunt', damage);
+            this.raiseEvent('onDealDamage', damage);
         }
     }
 };
@@ -308,8 +328,8 @@ Game.Mixins.sight = {
         Game.sendMessage('info', this, "You feel more aware!");
     },
     canSee: function(entity) {
-        // if not on the same level, then exit early
-        if (!entity || this.level !== entity.level) {
+        // if not on the same area, then exit early
+        if (!entity || this.level !== entity.area) {
             return false;
         }
         // if we're not in a square field of view, then we won't be in a real
@@ -381,7 +401,7 @@ Game.Mixins.inventoryHolder = {
     pickupItems: function(indices) {
         if (!this.holdsInventory) { return false; }
         // allows the user to pick up items from the map, where indices
-        // is the indices for the array returned by level.getItemsAt
+        // is the indices for the array returned by area.getItemsAt
         var mapItems = this.level.getItemsAt(this.x, this.y);
         var added = 0;
         // iterate through all indices
@@ -496,6 +516,24 @@ Game.Mixins.corpseDropper = {
     init: function(template) {
         this.corpseDropChance = template['corpseDropChance'] || 100;
     },
+    listeners: {
+        onDeath: function(attacker) {
+            if (!this.dropsCorpse) { return; }
+            // check if we should drop a corpse
+            if (ROT.RNG.getPercentage() <= this.corpseDropChance) {
+                // create a new corpse item and drop it
+                var deadThing = this;
+                var corpse = Game.ItemRepository.create('corpse',
+                    {
+                        name: deadThing.name + ' corpse',
+                        foreground: deadThing.foreground
+                    }
+                );
+                this.level.addItem(this.x, this.y, corpse);
+            }
+        }
+    }
+/*  REPLACED with onDeath listener
     tryDropCorpse: function() {
         if (!this.dropsCorpse) { return; }
         if (ROT.RNG.getPercentage() < this.corpseDropChance) {
@@ -504,9 +542,10 @@ Game.Mixins.corpseDropper = {
             var corpse = Game.ItemRepository.create('corpse',
                         { name: deadThing.name + ' corpse',
                         foreground: deadThing.foreground });
-            this.level.addItem(this.x, this.y, corpse);
+            this.area.addItem(this.x, this.y, corpse);
         }
     }
+*/
 };
 
 Game.Mixins.armorUser = {
@@ -555,6 +594,37 @@ Game.Mixins.experienceGainer = {
             this.statOptions.push(['Increase sight range', this.increaseSightRadius]);
         }
     },
+    listeners: {
+        onKill: function(victim) {
+            var exp = victim.maxHP + victim.getDefenseValue();
+            if (victim.isAttacker) {
+                exp += victim.getAttackValue();
+            }
+            // account for level differences
+            if (victim.gainsExperience) {
+                exp -= (this.explevel - victim.explevel) * 3;
+            }
+            // only give experience if > 0
+            if (exp > 0) {
+                this.giveExperience(exp);
+            }
+        },
+        onGainLevel: function() {
+            if (this === Game.thePlayer) {
+                // setup the gains stat screen and show it
+                Game.Screen.gainStatScreen.setup(this);
+                Game.Screen.playScreen.setSubScreen(Game.Screen.gainStatScreen);
+            } else {
+                // randomly select a stat option and execute the callback for each stat point
+                while (this.statPoints > 0) {
+                    // call the stat increasing function with this as the context
+                    var statOption = this.statOptions.random();
+                    statOption[1].call(this);
+                    this.statPoints--;
+                }
+            }
+        }
+    },
     getNextLevelExperience: function() {
         return (this.explevel * this.explevel) * 10;
     },
@@ -583,26 +653,66 @@ Game.Mixins.experienceGainer = {
         // check if we gained at least one level
         if (levelsGained > 0) {
             Game.sendMessage('info', this, "You feel more experienced!");
+            this.raiseEvent('onGainLevel');
+
+            /* MOVED to the onGainLevel event
             // heal the entity if possible
             if (this.isDestructible) {
                 this.hp = this.maxHP;
             }
             this.gainStats();
+            */
         }
+    }
+};
+
+Game.Mixins.playerTracker = {
+    hasTrackers: true,
+    init: function(template) {
+        // anything we might want to track for the player (to show on end game screen)
+        this.trackers = {};
+        this.trackers.turnsTaken = template['turnsTaken'] || 0;
+        this.trackers.enemiesSlain = template['enemiesSlain'] || 0;
+        //this.trackers.areaExplored = template['areaExplored'] || 1;
+        this.trackers.damageDealt = template['damageDealt'] || 0;
+        this.trackers.damageReceived = template['damageReceived'] || 0;
+        this.trackers.foodEaten = template['foodEaten'] || 0;
+        this.trackers.furthestLevel = template['furthestLevel'] || 1;
     },
-    gainStats: function() {
-        if (this === Game.thePlayer) {
-            // setup the gains stat screen and show it
-            Game.Screen.gainStatScreen.setup(this);
-            Game.Screen.playScreen.setSubScreen(Game.Screen.gainStatScreen);
-        } else {
-            // randomly select a stat option and execute the callback for each stat point
-            while (this.statPoints > 0) {
-                // call the stat increasing function with this as the context
-                var statOption = this.statOptions.random();
-                statOption[1].call(this);
-                this.statPoints--;
+    listeners: {
+        onTurnTaken: function() {
+            this.trackers.turnsTaken++;
+        },
+        onKill: function(victim) {
+            this.trackers.enemiesSlain++;
+        },
+        onChangeLevel: function(newlevel) {
+            if (newlevel > this.trackers.furthestLevel) {
+                this.trackers.furthestLevel = newlevel;
             }
+        },
+        onMove: function() {
+            // not sure how to implement an 'areaExplored' stat yet...
+            // maybe something to do with map explored flag?
+        },
+        onDealDamage: function(damageAmount) {
+            this.trackers.damageDealt += damageAmount;
+        },
+        onTakeDamage: function(damageAmount) {
+            this.trackers.damageReceived += damageAmount;
+        },
+        onEatFood: function() {
+            this.trackers.foodEaten++;
+        }
+    }
+};
+
+Game.Mixins.worldBoss = {
+    listeners: {
+        onDeath: function(attacker) {
+            // switch to win screen!
+            Game.sendMessage('info', attacker, "You have defeated the terrible %s!", this.describe());
+            Game.switchScreen(Game.Screen.winScreen, 'main');
         }
     }
 };
@@ -626,6 +736,7 @@ Game.Mixins.edible = {
             if (this.remainingPortions > 0) {
                 eater.modifyFullness(this.foodValue);
                 this.remainingPortions--;
+                eater.raiseEvent('onEatFood', this.foodValue);
             }
         }
     },

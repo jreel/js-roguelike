@@ -13,7 +13,7 @@ Game.Behaviors = {
     fungalGrowth: function(owner, level) {
         owner = owner || this;
         if (!level) {
-            level = owner.level;
+            level = owner.area;
         }
         if (owner.growthRemaining <=0 || ROT.RNG.getPercentage() > owner.growPctChance) {
             return false;
@@ -79,8 +79,8 @@ Game.Behaviors = {
         // if we are adjacent to the player, then attack instead of hunting
         var offsets = Math.abs(player.x - owner.x) + Math.abs(player.y - owner.y);
         if (offsets === 1) {
-            if (this.isAttacker) {
-                this.attack(player);
+            if (owner.isAttacker) {
+                owner.attack(player);
                 return true;
             }
         }
@@ -88,11 +88,11 @@ Game.Behaviors = {
         // generate the path and move to the first tile
         var path = new ROT.Path.AStar(player.x, player.y, function(x, y) {
             // if an entity is present on the tile, can't move there
-            var entity = owner.level.getEntityAt(x, y);
+            var entity = owner.area.getEntityAt(x, y);
             if (entity && entity !== player && entity !== owner) {
                 return false;
             }
-            return owner.level.map.getTile(x, y).isWalkable;
+            return owner.area.map.getTile(x, y).isWalkable;
         }, {topology: 4});
         // once we've gotten the path, we want to move to the second cell that is
         // passed in the callback (the first is the entity's starting point)
@@ -105,6 +105,50 @@ Game.Behaviors = {
             count++;
         });
         return succeeded;
+    },
+
+    zombieGrowth: function(owner) {
+        owner = owner || this;
+        // don't grow if we've already grown, or if we aren't injured enough
+        if (owner.hasGrown || (owner.hp / owner.maxHP) > 0.5) {
+            return false;
+        }
+        owner.hasGrown = true;
+        owner.increaseAttackValue(5);
+        owner.hp += 10;
+        // send a message saying the zombie grew
+        Game.sendMessageNearby(owner.area, owner.x, owner.y, 10,
+                               '%c{#f30}An extra arm appears on %s!', owner.describeThe());
+        return true;
+    },
+
+    spawnSlime: function(owner, level) {
+        owner = owner || this;
+        // spawn a slime only 10% of the time
+        if (ROT.RNG.getPercentage() > 10) {
+            return false;
+        }
+        if (!level) {
+            level = owner.area;
+        }
+        // generate a random position nearby
+        var xOffset = Math.floor(Math.random() * 3) - 1;
+        var yOffset = Math.floor(Math.random() * 3) - 1;
+
+        var xTarget = xOffset + owner.x;
+        var yTarget = yOffset + owner.y;
+
+        // check if we can spawn an entity at that position
+        if (!level.map.isEmptyFloor(xTarget, yTarget)) {
+            return false;
+        }
+
+        // create the slime
+        var slime = Game.MonsterRepository.create('slime');
+        slime.setPosition(xTarget, yTarget);
+        level.addEntity(slime);
+
+        return true;
     }
 
 };

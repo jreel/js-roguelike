@@ -51,7 +51,7 @@ Game.Templates.Monsters = {
         foreground: '#682',     // close to "olive drab"
         destructible: {
             maxHP: 1,
-            baseDefenseValue: 0
+            baseDefenseValue: 2
         },
         attacker: false,
         sight: false,
@@ -111,6 +111,47 @@ Game.Templates.Monsters = {
             sightRadius: 5
         },
         speed: 7,
+        behaviors: ['hunt', 'wander']       // hunt the player if in range, otherwise wander
+    },
+
+    giantZombie: {
+        name: 'giant zombie',
+        character: 'Z',
+        foreground: '#088',
+        noRandom: true,
+        worldBoss: true,
+        destructible: {
+            maxHP: 30,
+            baseDefenseValue: 2
+        },
+        attacker: {
+            baseAttackValue: 5
+        },
+        sight: {
+            sightRadius: 7
+        },
+        explevel: 5,
+        speed: 3,
+        hasGrown: false,
+        behaviors: ['zombieGrowth', 'spawnSlime', 'hunt', 'wander']
+    },
+
+    slime: {
+        name: 'slime',
+        character: 's',
+        foreground: '#9f9',
+        noRandom: true,
+        destructible: {
+            maxHP: 5,
+            baseDefenseValue: 2
+        },
+        attacker: {
+            baseAttackValue: 5
+        },
+        sight: {
+            sightRadius: 3
+        },
+        speed: 5,
         behaviors: ['hunt', 'wander']       // hunt the player if in range, otherwise wander
     }
 };

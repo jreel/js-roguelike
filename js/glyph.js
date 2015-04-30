@@ -40,7 +40,8 @@ Game.Glyph.prototype.getGlyph = function() {
 Game.DynamicGlyph = function(properties) {
     var defaults = {
         name: "thing",
-        description: "Who knows what this thing is?"
+        description: "Who knows what this thing is?",
+        listeners: {}       // "event subscription" sort of thingy
     };
 
     // apply defaults into our template where needed
@@ -55,22 +56,41 @@ Game.DynamicGlyph = function(properties) {
     var allMixins = Object.keys(Game.Mixins);
     for (var m = 0; m < allMixins.length; m++) {
         var mixinKey = allMixins[m];
+        var mixinSource = Game.Mixins[mixinKey];
         // for each one, see if we have a same-named property in the template
         // or template may have a key set to false to override constructor defaults and NOT have the mixin
         if (properties.hasOwnProperty(mixinKey) && (properties[mixinKey] !== false)) {
             // now, for this mixin that we want, get an array of its defined properties
-            var mixinProps = Object.keys(Game.Mixins[mixinKey]);
+            var mixinProps = Object.keys(mixinSource);
             for (var i = 0; i < mixinProps.length; i++) {
                 var prop = mixinProps[i];
-                // for each mixin property, if we don't already have it (and it's not the init routine),
+                // for each mixin property, if we don't already have it,
+                // (and it's not the 'init' or 'listeners' properties)
                 // add it to this
-                if (prop != 'init' && !this.hasOwnProperty(prop)) {
-                    this[prop] = Game.Mixins[mixinKey][prop];
+                if (prop != 'init' && prop != 'listeners' && !this.hasOwnProperty(prop)) {
+                    this[prop] = mixinSource[prop];
+                }
+            }
+            // add the mixin listeners to our listeners array (if not already there)
+            if (mixinSource.listeners) {
+                var listenerEvents = Object.keys(mixinSource.listeners);
+                for (var e = 0; e < listenerEvents.length; e++) {
+                    var event = listenerEvents[e];
+                    // if we don't already have a key for this event in our
+                    // listeners array, add it
+                    if (!this.listeners.hasOwnProperty(event)) {
+                        this.listeners[event] = [];
+                    }
+                    // if we don't already have the listener function, add it
+                    var listenerFunc = mixinSource.listeners[event];
+                    if (this.listeners[event].indexOf(listenerFunc) === -1) {
+                        this.listeners[event].push(listenerFunc);
+                    }
                 }
             }
             // call init function if there is one
-            if (Game.Mixins[mixinKey].init) {
-                Game.Mixins[mixinKey].init.call(this, properties[mixinKey]);
+            if (mixinSource.init) {
+                mixinSource.init.call(this, properties[mixinKey]);
             }
             // after properties are passed to init function, we don't need to store the
             // template/mixin init properties anymore.
@@ -78,54 +98,26 @@ Game.DynamicGlyph = function(properties) {
         }
     }
 
-    /*
-    var wantedMixins = properties['mixins'] || [];            // array of mixin keys, NOT a collection of object refs
-    for (var i = 0; i < wantedMixins.length; i++) {
-        var mixinKey = wantedMixins[i];
-        if (mixinKey !== false) {                               // so that we can 'remove' class defaults on certain templates
-            var mixinProps = Object.keys(Game.Mixins[mixinKey]);
-            for (var m = 0; m < mixinProps.length; m++) {
-                var prop = mixinProps[m];
-                if (prop != 'init' && prop != 'name' && !this.hasOwnProperty(prop)) {
-                    this[prop] = Game.Mixins[mixinKey][prop];
-                }
-            }
-            // call the init function if there is one
-            if (Game.Mixins[mixinKey].init) {
-                Game.Mixins[mixinKey].init.call(this, properties);
-            }
-        }
-    }
-    */
-
-    /*
-    this.mixins = properties['mixins'] || [];
-    for (var i = 0; i < this.mixins.length; i++) {
-        var mixin = this.mixins[i];
-        for (var prop in mixin) {
-            if (mixin.hasOwnProperty(prop) && prop != 'init' && prop != 'name' &&
-                !this.hasOwnProperty(prop)) {
-
-                this[prop] = mixin[prop];
-            }
-        }
-        if (mixin.init) {
-            mixin.init.call(this, properties)
-        }
-    }
-*/
-
-};
+ };
 Game.DynamicGlyph.extend(Game.Glyph);
 
-/*
-Game.DynamicGlyph.prototype.applyMixin = function(mixin, template) {
-    augment.call(this, this, mixin);
-    if (mixin.init) {
-        mixin.init.call(this, this, template);
+Game.DynamicGlyph.prototype.raiseEvent = function(event) {      // used to alert "subscribed" listeners
+    //console.log('raiseEvent function called by ' + this.name);
+    // make sure we have at least one listener; if not, exit
+    if (!this.listeners[event]) {
+        return;
+    }
+    // extract any arguments passed after the event name
+    //console.log(arguments);
+    var args = Array.prototype.slice.call(arguments, 1);
+    // invoke each listener, with this entity as the context, using the passed args
+    //console.log(this.listeners[event]);
+    //console.log(this.listeners[event].length);
+    for (var i = 0; i < this.listeners[event].length; i++) {
+        //console.log(this.listeners[event][i]);
+        this.listeners[event][i].apply(this, args);
     }
 };
-*/
 
 Game.DynamicGlyph.prototype.describe = function(capitalize) {
     var string = this.name;
