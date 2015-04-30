@@ -128,6 +128,7 @@ Game.Geometry.heightMap = function(divisions, roughness, seed) {
     // initial seed value for the corners
     seed = seed || Math.random();
     data[0][0] = data[0][divisions] = data[divisions][0] = data[divisions][divisions] = seed;
+    data[divisions/2][divisions/2] = seed;
 
     //console.log('roughness: ' + roughness + ', seed: ' + seed);
     var h = roughness;       // the range (-h -> +h) for the average offset
@@ -137,7 +138,7 @@ Game.Geometry.heightMap = function(divisions, roughness, seed) {
 
     // side length is distance of a single square side
     // or distance of diagonal in diamond
-
+    var avg, offset;
     for (var sideLength = divisions;
         // side length must be >= 2 so we always have
         // a new value (if it's 1, we overwrite existing values
@@ -157,7 +158,7 @@ Game.Geometry.heightMap = function(divisions, roughness, seed) {
             for (var y = 0; y < divisions; y += sideLength) {
                 // x, y is the upper left corner of square
                 // calculate average of existing corners
-                var avg = data[x][y] +              // top left
+                avg = data[x][y] +              // top left
                           data[x+sideLength][y] +   // top right
                           data[x][y+sideLength] +   // lower left
                           data[x+sideLength][y+sideLength]; // lower right
@@ -167,8 +168,14 @@ Game.Geometry.heightMap = function(divisions, roughness, seed) {
                 // calculate random value in range of 2h
                 // and then subtract h so the end value
                 // is in the range (-h, +h)
-                data[x+halfSide][y+halfSide] = avg + (2 * Math.random() * h) - h;
+                //offset = (2 * Math.random() * h) - h;
 
+                // a different method for calculating offset:
+                offset = randomNormal(0, h);
+                // at each iteration, draw randomly from a normal distribution
+                // with mean zero and standard deviation k2^(-iH),
+                // where k is the initial scale factor, and H between 0-1.
+                data[x+halfSide][y+halfSide] = avg + offset;
             }
         }
 
@@ -185,30 +192,52 @@ Game.Geometry.heightMap = function(divisions, roughness, seed) {
                 // x, y is center of diamond
                 // note we must use mod and add divisions for subtraction
                 // so that we can wrap around the array to find the corners
+                /*
+                // wrapping method:
                 avg = data[(x-halfSide + divisions) % (divisions)][y] +     // left of center
                       data[(x+halfSide) % (divisions)][y] +                 // right of center
                       data[x][(y+halfSide) % (divisions)] +                 // below center
                       data[x][(y-halfSide + divisions) % (divisions)];      // above center
                 avg /= 4.0;
+                */
+
+                // non-wrapping method:
+                var sum = 0;
+                var count = 0;
+                sum += data[x][y-halfSide] ? data[x][y - halfSide] : 0;     // top
+                count += data[x][y - halfSide] ? 1 : 0;
+
+                sum += data[x + halfSide] ? data[x + halfSide][y] : 0;     // right
+                count += data[x + halfSide] ? 1 : 0;
+
+                sum += data[x][y + halfSide] ? data[x][y + halfSide] : 0;     // bottom
+                count += data[x][y + halfSide] ? 1 : 0;
+
+                sum += data[x - halfSide] ? data[x - halfSide][y] : 0;     // left
+                count += data[x - halfSide] ? 1 : 0;
+
+                avg = sum / count;
 
                 // new value = avg plus random offset
                 // calculate random value in range of 2h
                 // and then subtract h so the end value
                 // is in the range (-h, +h)
+                //offset = (2 * Math.random() * h) - h;
+                offset = randomNormal(0, h);
 
                 // update value for center of diamond
-                data[x][y] = avg + (2 * Math.random() * h) - h;
+                data[x][y] = avg + offset;
 
                 // wrap values on the edges
                 // remove this and adjust loop condition above
                 // for non-wrapping values
                 // (remove y condition to keep only east-west wrapping)
                 if (x === 0) {
-                    data[divisions][y] = avg;
+                    data[divisions][y] = avg + offset;
                 }
                 /*
                 if (y === 0) {
-                    data[x][divisions] = avg;
+                    data[x][divisions] = avg + offset;
                 }
                 */
             }

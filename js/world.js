@@ -44,26 +44,54 @@ Game.World = function(options) {
 };
 
 Game.World.prototype.generateWorldMap = function(options) {
-    // need world generator algorithm for fractal-ish continents/oceans, etc.
     // this should create a worldMap in the format: grid[x][y] = tile
     // randomly scatter points of interest (mountains, dungeons, towns, etc.)
     // we also need to be able to wrap east <-> west via whatever move() method we use
     // (in other words, this is a 'cylindrical' world map)
+    options = options || {};
+    var mapSize = nearestPowerOf2(options.mapSize) || 256;
 
     // Step 1: generate Height Map -> elevation for each tile
-    var elevationMap = this.generateElevationMap();
+    var elevationMap = this.generateElevationMap({ mapSize:mapSize });
 
     // Step 2: generate Precipitation map = heightMap mask -> "moisture" for each tile
-    var precipitationMap = this.generatePrecipitationMap();
+    var precipitationMap = this.generatePrecipitationMap({ mapSize: mapSize });
 
     // Step 3: generate Temperature gradient
-    var temperatureMap = this.generateTemperatureMap();
+    var temperatureMap = this.generateTemperatureMap({ mapSize: mapSize });
 
-
-    // Step 4: each map tile should have had bits set in Steps 1-3.
-    // Now we can compare the tile value to the defined biomes in Game.BiomeTypes.
+    // Step 4: each tile for each map should have had bits set in Steps 1-3.
+    // Now we can combine into one master map, and compare the tile value to
+    // the defined biomes in Game.BiomeTypes.
     // if ( (Tile & Game.BiomeTypes.biomes[i]) === Tile ) is true,
     // then that Tile is that biome type.
+    var tileType;
+    var biomesMap = new Array(mapSize);
+    for (var x = 0; x < mapSize; x++) {
+        biomesMap[x] = new Array(mapSize);
+        for (var y = 0; y < mapSize; y++) {
+            tileType = elevationMap[x][y] |
+                       precipitationMap[x][y] |
+                       temperatureMap[x][y];
+
+            for (var i = 0; i < Game.BiomeTypes.biomes.length; i++) {
+                if ((tileType & Game.BiomeTypes.biomes[i]) === tileType) {
+                    biomesMap[x][y] = Game.BiomeTypes.biomes[i];
+                    break;
+                }
+            }
+        }
+    }
+
+    Game.Geometry.consoleOut(biomesMap, Game.BiomeTypes.biomes, ['.', 'I', '▓', '▒', '∆', 'A', '/', '#',
+                                                                 '=','~','m','s',"'","-",
+                                                                 "T","&",",",
+                                                                 'F','f','%','w',':',
+                                                                 '*','`','J','"']);
+
+    return biomesMap;
+
+
     // We can set a glyph depending on which biome.
     // Game.BiomeTiles.list will contain a list of Tile objects
     // corresponding to the various biomes.
@@ -84,18 +112,16 @@ Game.World.prototype.generateWorldMap = function(options) {
 Game.World.prototype.generateElevationMap = function(options) {
     options = options || {};
     var mapSize = nearestPowerOf2(options.mapSize) || 256;
-    var waterline = randomFloat(0, 0.85);
-
+    var waterline = randomFloat(0.5, 0.75);
     // Step 1: generate Height Map -> elevation for each tile
     // call Game.Geometry.heightMap(levelOfDetail, roughness, seed)
     // levelOfDetail = any integer greater than 1; map size will be 2^(levelOfDetail)
     // roughness = value between (0, 1); values around 0.6 tend to be most "earth-like"
     // seed = value between (0, 1); initial value of the 4 corners
     //var lod = Math.round(Math.log(mapSize)/Math.log(2));
-    var mean = randomInt(40, 60);
-    var roughness = randomNormalInt(mean, 10) / 100;
-    var seed = randomNormal(waterline, randomFloat(0.005, 0.05));
-    var elevation = Game.Geometry.heightMap(mapSize, roughness, seed);
+    var roughness = randomFloat(0.5, 0.75);
+    var seed = randomNormal(waterline, 0.05);
+    var eMap = Game.Geometry.heightMap(mapSize, roughness, seed);
 
     // randomly set percentages for each elevation division:
     // DEEP_WATER, SHALLOW_WATER, COASTAL, PLAINS, HILLS, MONTANE, ALPINE, SNOWCAP
@@ -103,43 +129,46 @@ Game.World.prototype.generateElevationMap = function(options) {
     var fairPct = 1.00 / numCats;
     var cutoffPercents = new Array(numCats);
 
-    for (var j = 0, marker = 0; j < numCats; j++) {
+    var cutoff, marker = 0;
+    for (var j = 0; j < numCats; j++) {
         // pick a cutoff % that's "around" what we'd expect from an equal division
         // use the fairPct as the mean, and a random standard deviation,
         // and pick a random value from the resulting normal distribution
-        var cutoff;
-        do {
-            cutoff = randomNormal(fairPct, randomFloat(0.005, 0.025));
-        } while (cutoff <= 0);
+
+        // set the waterline to what we've defined
         if (j === 0) {
-            cutoff = waterline / randomFloat(1.1, 2);
+            cutoffPercents[j] = waterline / randomFloat(1.1, 2);
+        } else if (j === 1) {
+            cutoffPercents[j] = waterline;
+            marker = waterline;
+        } else {
+            do {
+                cutoff = randomNormal(fairPct, randomFloat(0.005, 0.025));
+            } while (cutoff <= 0);
+            cutoffPercents[j] = cutoff + marker;
+            marker += cutoff;
         }
-        if (j === 1) {
-            cutoff = waterline;
-        }
-        cutoffPercents[j] = cutoff + marker;
-        marker += cutoff;
     }
     cutoffPercents = normalizeArray(cutoffPercents);
-
+    console.log(cutoffPercents);
     // now that we have our cutoff ranges defined and normalized,
     // we can loop through our data array applying our
     // appropriate zone based on the value.
     for (var x = 0; x < mapSize; x++) {
         for (var y = 0; y < mapSize; y++) {
-            var elev = elevation[x][y];
+            var elev = eMap[x][y];
             for (var k = 0; k < cutoffPercents.length; k++) {
                 if (elev <= cutoffPercents[k]) {
-                    elevation[x][y] = Game.BiomeTypes.elevations[k];
+                    eMap[x][y] = Game.BiomeTypes.elevations[k];
                     break;
                 }
             }
         }
     }
 
-    Game.Geometry.consoleOut(elevation, Game.BiomeTypes.elevations, ['▓', '▒', "'", '"', "^", "*", '∆', '∆'])
+    Game.Geometry.consoleOut(eMap, Game.BiomeTypes.elevations, ['▓', '▒', "'", '"', "^", "*", '∆', '∆'])
 
-    return elevation;
+    return eMap;
 };
 
 Game.World.prototype.generatePrecipitationMap = function(options) {
@@ -151,14 +180,53 @@ Game.World.prototype.generatePrecipitationMap = function(options) {
     // smoother values for roughness would probably work best here.
     //var lod = Math.round(Math.log(mapSize) / Math.log(2));
 
-    mean = randomInt(15, 25);
-    roughness = randomNormalInt(mean, 5) / 100;
-
+    //var mean = randomInt(15, 25);
+    //var roughness = randomNormalInt(mean, 5) / 100;
+    var roughness = randomFloat(0,0.4);
+    var pMap = Game.Geometry.heightMap(mapSize, roughness);
 
     // set percentages for each division:
     // ARID, SEMIARID, MODERATE, HUMID, RAINY
+    var numCats = Game.BiomeTypes.precipitations.length;
+    var fairPct = 1.00 / numCats;
+    var cutoffPercents = new Array(numCats);
 
-    //var precipitationMap = Game.Geometry.heightMap(lod, roughness);
+    for (var j = 0, marker = 0; j < numCats; j++) {
+        // pick a cutoff % that's "around" what we'd expect from an equal division
+        // use the fairPct as the mean, and a random standard deviation,
+        // and pick a random value from the resulting normal distribution
+        var cutoff;
+        do {
+            cutoff = randomNormal(fairPct, 0.05); //randomFloat(0.005, 0.1));
+        } while (cutoff <= 0);
+
+        // if we wanted to make any adjustments to any category
+        // like we do with elevation and temperature,
+        // this is where it would go
+
+        cutoffPercents[j] = cutoff + marker;
+        marker += cutoff;
+    }
+    cutoffPercents = normalizeArray(cutoffPercents);
+
+    // now that we have our cutoff ranges defined and normalized,
+    // we can loop through our data array applying our
+    // appropriate zone based on the value.
+    for (var x = 0; x < mapSize; x++) {
+        for (var y = 0; y < mapSize; y++) {
+            var precip = pMap[x][y];
+            for (var k = 0; k < cutoffPercents.length; k++) {
+                if (precip <= cutoffPercents[k]) {
+                    pMap[x][y] = Game.BiomeTypes.precipitations[k];
+                    break;
+                }
+            }
+        }
+    }
+
+    Game.Geometry.consoleOut(pMap, Game.BiomeTypes.precipitations, [".", '"', "%", '▒', '▓']);
+
+    return pMap;
 };
 
 Game.World.prototype.generateTemperatureMap = function(options) {
@@ -166,8 +234,8 @@ Game.World.prototype.generateTemperatureMap = function(options) {
     var mapSize = nearestPowerOf2(options.mapSize) || 256;
     var normalMax = options.normalMax || 35;
     var normalMin = options.normalMin || -25;
-    var extremeMax = options.extremeMax || 45;
-    var extremeMin = options.extremeMin || -45;
+    var extremeMax = options.extremeMax || 50;
+    var extremeMin = options.extremeMin || -35;
 
     // Step 3: generate Temperature gradient
     // call Math.getGaussianFunction(mean, std, peakHeight)
@@ -178,14 +246,17 @@ Game.World.prototype.generateTemperatureMap = function(options) {
     // this returns a function that can be used to find the Gaussian probability of a
     // given value of X (or in the case of our map, a given latitude/y-coordinate).
 
-    var data = new Array(mapSize);
+    var tMap = new Array(mapSize);
     for (var i = 0; i < mapSize; i++) {
-        data[i] = new Array(mapSize);
+        tMap[i] = new Array(mapSize);
     }
     var equator = mapSize / 2;
-    var stdev = equator / randomFloat(1, 4);
-    var temperatureGradient = Math.getGaussianFunction(equator, stdev);
-    // temperatureGradient(y) will return a value between 0-1;
+    var stdev = equator / randomFloat(0.5, 3.5);  // larger denominator will tend toward 'colder' maps
+    // limiting the maxValue gives a chance to not have any highest-temp zones at all.
+    // remove or comment out the next line if you want to change this.
+    var maxValue = randomFloat(0.65, 1);
+    var temperatureGradient = Math.getGaussianFunction(equator, stdev, maxValue);
+    // temperatureGradient(y) will return a value between 0-maxValue;
     // need to normalize this to an actual temperature range
     // minTemp < arctic < subarctic < boreal < temperate < subtropic < tropic < maxTemp
 
@@ -212,17 +283,17 @@ Game.World.prototype.generateTemperatureMap = function(options) {
         // and pick a random value from the resulting normal distribution
         var cutoff;
         do {
-            cutoff = randomNormal(fairPct, randomFloat(0.005, 0.1));
+            cutoff = randomNormal(fairPct, 0.05);   //randomFloat(0.005, 0.1));
         } while (cutoff <= 0);
 
         // for the first and the last temperature zone, we want to use
-        // our "extreme" min/max temps, so let's add the appropriate
-        // percentage, and normalize later.
+        // our "extreme" min/max temps, so let's add some extra amount of
+        // the appropriate percentage, and normalize later.
         if (j === 0) {
-            cutoff += (normalMin - minTemp) * (fairPct / degPerCat);
+        //    cutoff += ((normalMin - minTemp) * (fairPct / degPerCat)) / (randomFloat(1,3));
         }
         if (j === numCats - 1) {
-            cutoff += (maxTemp - normalMax) * (fairPct / degPerCat);
+        //    cutoff += ((maxTemp - normalMax) * (fairPct / degPerCat)) / (randomFloat(1,3));
         }
         cutoffPercents[j] = cutoff + marker;
         marker += cutoff;
@@ -234,20 +305,30 @@ Game.World.prototype.generateTemperatureMap = function(options) {
     // temperature gradient function, along with the
     // appropriate zone based on the value.
 
-    var thisTemp;
-    for (var x = 0; x < mapSize; x++) {
-        for (var y = 0; y < mapSize; y++) {
-            thisTemp = temperatureGradient(y);
+    var thisTemp, assign;
+    var coldCount = 0;
+    var hotCount = 0;
+    for (var y = 0; y < mapSize; y++) {
+        for (var x = 0; x < mapSize; x++) {
+            // let's let each x vary slightly around y
+            thisTemp = temperatureGradient(randomNormalInt(y, 1));
             for (var k = 0; k < cutoffPercents.length; k++) {
                 if (thisTemp <= cutoffPercents[k]) {
-                    data[x][y] = Game.BiomeTypes.temperatures[k];
+                    assign = Game.BiomeTypes.temperatures[k];
+                    if (assign === Game.BiomeTypes.temperatures[0]) {coldCount++;}
+                    if (assign === Game.BiomeTypes.temperatures[Game.BiomeTypes.temperatures.length-1]) {hotCount++;}
+                    tMap[x][y] = assign;
                     break;
                 }
             }
         }
     }
 
-    return data;
+    Game.Geometry.consoleOut(tMap, Game.BiomeTypes.temperatures, [".", '"', "*", '#', '▒', '▓']);
+
+    var mapAreaPercent = 100 / (mapSize * mapSize);
+    console.log('polar: ' + coldCount * mapAreaPercent + "%, tropic: " + hotCount * mapAreaPercent + "%");
+    return tMap;
 };
 
 Game.World.prototype.createArea = function(options) {
