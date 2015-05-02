@@ -89,7 +89,7 @@ Game.Screen.playScreen = {
         display.setOptions({
             width: Game.screenWidth,
             height: Game.screenHeight + 1,
-            fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
+            //fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
             fontSize: 14,
             forceSquareRatio: true,
             spacing: 1
@@ -556,7 +556,7 @@ Game.Screen.loseScreen = {
             width: loseGraphicSize.width + 2,
             height: loseGraphicSize.height + 1,
             fontSize: 14,
-            fontFamily: 'Segoe UI Symbol',
+            //fontFamily: 'Segoe UI Symbol',
             forceSquareRatio: false,
             spacing: 1,
             fg: '#000',
