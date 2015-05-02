@@ -3,14 +3,21 @@
 <head lang="en">
     <meta charset="UTF-8">
     <title>Javascript Roguelike</title>
-    <style>body {background: #000; color: #ccc;}</style>
+    <link rel="stylesheet" href="fonts/stylesheet.css" type="text/css" charset="utf-8" />
+    <style>
+        body {  background: #000;
+                color: #ccc;
+                font-family: 'Cambria', 'Segoe UI Symbol', 'symbola', monospace;
+        }
+    </style>
 </head>
 <body>
+    <!-- unicode font support //-->
 
-    <script src="js/rot.js"></script>
+    <script src="lib/rot.js"></script>
     <script src="js/utility.js"></script>
     <script src="js/game.js"></script>
-    <script src ="js/geometry.js"></script>
+    <script src="js/geometry.js"></script>
     <script src="js/logo.js"></script>
 
     <!-- constructor functions and mixins //-->
@@ -30,6 +37,7 @@
     <script src="js/heroes.js"></script>
     <script src="js/monsters.js"></script>
     <script src="js/items.js"></script>
+    <script src="js/tilesets.js"></script>
 
     <!-- levels/maps and display/messaging //-->
     <script src="js/biomes.js"></script>
@@ -40,6 +48,7 @@
     <script src="js/screens.js"></script>
 
     <script src="js/map.js"></script>
+
 
 </body>
 </html>

@@ -28,12 +28,11 @@ var Game = {
     screenWidth: 40,
     screenHeight: 30,
     msgScreenHeight: 10,
-    //numLevels: 5,
 
     // TODO: extra players, player creation routine
     player: null,
-    worlds: [],
     currentWorld: null,
+    worlds: [],
     gameOver: false,
 
     Templates: {
@@ -48,8 +47,8 @@ var Game = {
         this.displays.main = new ROT.Display({
                                         width: this.screenWidth,
                                         height: this.screenHeight,
-                                        fontSize: 18,
-                                        //fontFamily: "Segoe UI Symbol",
+                                        fontSize: 14,
+                                        fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
                                         forceSquareRatio: true,
                                         spacing: 1
                                         });
@@ -58,7 +57,7 @@ var Game = {
                                         width: this.screenWidth,
                                         height: this.msgScreenHeight,
                                         fontSize: 14,
-                                        //fontFamily: "Segoe UI Symbol",
+                                        fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
                                         forceSquareRatio: false
                                         });
 
@@ -66,6 +65,7 @@ var Game = {
                                         width: this.screenWidth,
                                         height: 1,
                                         fontSize: 14,
+                                        fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
                                         forceSquareRatio: false
                                         });
 
@@ -73,6 +73,7 @@ var Game = {
                                     width: this.screenWidth,
                                     height: 1,
                                     fontSize: 14,
+                                    fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
                                     fontStyle: 'bold',
                                     forceSquareRatio: false
                                     });
@@ -178,8 +179,7 @@ var Game = {
     startNewGame: function() {
         // generate the player and a starting world
         // TODO: player generation, party system
-        var player = new Game.Player(Game.HeroTemplates.default);
-        Game.player = player;
+        this.player = new Game.Player(Game.HeroTemplates.default);
 
         // TODO: starting script
         var world = new Game.World();
@@ -187,10 +187,11 @@ var Game = {
         Game.currentWorld = world;
 
         // add player to world
-        world.currentArea.addEntityAtRandomPosition(player);
+        world.currentArea.addEntityAtRandomPosition(this.player);
 
         // Start the current area engine
         world.currentArea.engine.start();
+
     }
 };
 
@@ -222,8 +223,9 @@ window.onload = function() {
         alert("The rot.js library isn't supported by your browser.");
     }
 };
-
+/*
 window.onresize = function() {
     Game.recalcDisplaySize();
     Game.refresh();
 };
+*/

@@ -10,11 +10,9 @@
 // TODO: move to repository system?
 Game.Behaviors = {
 
-    fungalGrowth: function(owner, level) {
+    fungalGrowth: function(owner) {
         owner = owner || this;
-        if (!level) {
-            level = owner.area;
-        }
+        var area = owner.area;
         if (owner.growthRemaining <=0 || ROT.RNG.getPercentage() > owner.growPctChance) {
             return false;
         }
@@ -34,17 +32,17 @@ Game.Behaviors = {
 
         // Check that we can actually spread into that location,
         // and if so, then we grow!
-        if (!level.map.isEmptyFloor(xTarget, yTarget, level)) {
+        if (!area.map.isEmptyFloor(xTarget, yTarget)) {
             return false;
         }
 
         var newGrowth = Game.MonsterRepository.create(owner.name);
         newGrowth.setPosition(xTarget, yTarget);
-        level.addEntity(newGrowth);
+        area.addEntity(newGrowth);
         owner.growthRemaining--;
 
         // alert nearby
-        Game.sendMessageNearby(level, xTarget, yTarget, 5, "%c{" + owner.foreground + "}The %s is spreading!", owner.name);
+        Game.sendMessageNearby(area, xTarget, yTarget, 5, "%c{" + owner.foreground + "}The %s is spreading!", owner.name);
         return true;
     },
 
@@ -69,12 +67,11 @@ Game.Behaviors = {
     hunt: function(owner) {
         owner = owner || this;
 
+        var player = Game.player;
         // first, ensure that we can see what we are trying to hunt
-        if (!owner.hasSight || !owner.canSee(Game.thePlayer)) {
+        if (!owner.hasSight || !owner.canSee(player)) {
             return false;
         }
-
-        var player = Game.thePlayer;
 
         // if we are adjacent to the player, then attack instead of hunting
         var offsets = Math.abs(player.x - owner.x) + Math.abs(player.y - owner.y);
@@ -122,15 +119,14 @@ Game.Behaviors = {
         return true;
     },
 
-    spawnSlime: function(owner, level) {
+    spawnSlime: function(owner) {
         owner = owner || this;
         // spawn a slime only 10% of the time
         if (ROT.RNG.getPercentage() > 10) {
             return false;
         }
-        if (!level) {
-            level = owner.area;
-        }
+        var area = owner.area;
+
         // generate a random position nearby
         var xOffset = Math.floor(Math.random() * 3) - 1;
         var yOffset = Math.floor(Math.random() * 3) - 1;
@@ -139,14 +135,14 @@ Game.Behaviors = {
         var yTarget = yOffset + owner.y;
 
         // check if we can spawn an entity at that position
-        if (!level.map.isEmptyFloor(xTarget, yTarget)) {
+        if (!area.map.isEmptyFloor(xTarget, yTarget)) {
             return false;
         }
 
         // create the slime
         var slime = Game.MonsterRepository.create('slime');
         slime.setPosition(xTarget, yTarget);
-        level.addEntity(slime);
+        area.addEntity(slime);
 
         return true;
     }

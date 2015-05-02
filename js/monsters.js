@@ -130,7 +130,7 @@ Game.Templates.Monsters = {
         sight: {
             sightRadius: 7
         },
-        explevel: 5,
+        expLevel: 5,
         speed: 3,
         hasGrown: false,
         behaviors: ['zombieGrowth', 'spawnSlime', 'hunt', 'wander']

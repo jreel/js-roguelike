@@ -97,7 +97,7 @@ Game.Area.prototype.simulateTurns = function(numTurns) {
     for (var i = 0; i < numTurns; i++) {
         for (var e = 0; e < this.entities.length; e++) {
             var entity = this.entities[e];
-            if (entity.isActor && (entity !== Game.thePlayer)) {
+            if (entity.isActor && (entity !== Game.player)) {
                 entity.act();
             }
         }

@@ -28,10 +28,9 @@ Game.Screen.startScreen = {
         display.setOptions({
             width: logoSize.width + 2,
             height: logoSize.height + 10,
-            fontSize: 14,
-            //fontFamily: "Segoe UI Symbol",
+            fontSize: 12,
             forceSquareRatio: false,
-            spacing: 1,
+            spacing: 0.8,
             fg: '#ccc',
             bg: '#000'
         });
@@ -90,8 +89,8 @@ Game.Screen.playScreen = {
         display.setOptions({
             width: Game.screenWidth,
             height: Game.screenHeight + 1,
-            fontSize: 18,
-            //fontFamily: "Segoe UI Symbol",
+            fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
+            fontSize: 14,
             forceSquareRatio: true,
             spacing: 1
         });
@@ -115,7 +114,7 @@ Game.Screen.playScreen = {
         // re-set in case we just exited a subscreen
         display.setOptions({
             width: Game.screenWidth,
-            fontSize: 18,
+            fontSize: 14,
             //fontFamily: "Segoe UI Symbol",
             forceSquareRatio: true
         });
@@ -123,8 +122,10 @@ Game.Screen.playScreen = {
         var screenWidth = Game.screenWidth;
         var screenHeight = Game.screenHeight;
 
+        var player = Game.player;
+        this.player = player;
         var area = Game.currentWorld.currentArea;
-        this.area = area;       // so other methods can use it too
+        this.area = area;
 
         var mapWidth = area.width;
         var mapHeight = area.height;
@@ -260,7 +261,7 @@ Game.Screen.playScreen = {
         var newX = this.player.x + dX;
         var newY = this.player.y + dY;
         // Try to move to the new cell
-        this.player.tryMove(newX, newY, area);
+        this.player.tryMove(newX, newY);
     },
 
     activateTile: function() {
@@ -337,12 +338,12 @@ Game.Screen.statsLine = {
 
         // show current area
         // TODO: current area name?
-        /*
-        var levelLabel = '%c{#fff}%b{#000}Exploring Level: ';
-        var currentLevel = Game.currentLevel.area;
-        display.drawText(offset, 0, levelLabel + currentLevel);
-        offset += (ROT.Text.measure(levelLabel + currentLevel).width + 3);
-        */
+        var areaLabel = '%c{#fff}%b{#000}Exploring: ';
+        var currentArea = Game.currentWorld.currentArea.biome.toLowerCase();
+        //var subBiome = Game.currentWorld.getBiomeName(Game.player.x, Game.player.y).toLowerCase();
+        //currentArea += " (" + subBiome.toLowerCase() + ")";
+        display.drawText(offset, 0, areaLabel + currentArea);
+        offset += (ROT.Text.measure(areaLabel + currentArea).width + 3);
 
         // show current hp
         var hpLabel = '%c{#fff}%b{#000}HP: ';
@@ -538,7 +539,7 @@ Game.Screen.winScreen = {
 Game.Screen.loseScreen = {
     enter: function() {
         // console.log("Entered lose screen.");
-        //Game.thePlayer.clearMessages();
+        //Game.player.clearMessages();
         //Game.displays.msg.clear();
     },
     exit: function() {
@@ -555,6 +556,7 @@ Game.Screen.loseScreen = {
             width: loseGraphicSize.width + 2,
             height: loseGraphicSize.height + 1,
             fontSize: 14,
+            fontFamily: 'Segoe UI Symbol',
             forceSquareRatio: false,
             spacing: 1,
             fg: '#000',
@@ -572,14 +574,14 @@ Game.Screen.loseScreen = {
                 col++;
             }
         }
-
+/*
         var trackers = Object.keys(Game.player.trackers);
         for (var j = 0; j < trackers.length; j++) {
             var trackedStat = trackers[j];
-            Game.sendMessage('info', Game.player, trackedStat + ": " + Game.player.trackers[trackedStat]);
+            //Game.sendMessage('info', Game.player, trackedStat + ": " + Game.player.trackers[trackedStat]);
         }
-
-        Game.sendMessage('warning', Game.player, "Press [Enter] to go back to the start screen if you want to try again!");
+*/
+        //Game.sendMessage('warning', Game.player, "Press [Enter] to go back to the start screen if you want to try again!");
     },
     handleInput: function(inputType, inputData) {
         // TODO: mouse input

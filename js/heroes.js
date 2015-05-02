@@ -18,7 +18,7 @@ Game.HeroTemplates = {
     default: {
         character: '@',
         foreground: '#fff',
-        background: '#000',
+        background: '',
 
         // mixins
         destructible: {
@@ -28,7 +28,7 @@ Game.HeroTemplates = {
             baseAttackValue: 3
         },
         sight: {
-            sightRadius: 6
+            sightRadius: 100
         },
         holdsInventory: {
             inventorySlots: 22

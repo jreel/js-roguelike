@@ -29,13 +29,13 @@ Game.sendMessage = function(msgType, recipient, message, subs) {
     }
 };
 
-Game.sendMessageNearby = function(level, centerX, centerY, radius, message, subs) {
+Game.sendMessageNearby = function(area, centerX, centerY, radius, message, subs) {
     if (subs) {
         var submsg = Array.prototype.slice.call(arguments, 4);
         message = String.format.apply(this, submsg);
     }
     // get the nearby entities
-    var entities = level.getEntitiesWithinRadius(centerX, centerY, radius);
+    var entities = area.getEntitiesWithinRadius(centerX, centerY, radius);
     // Iterate through nearby entities sending the message
     for (var i = 0; i < entities.length; i++) {
         if (entities[i].isMessageRecipient) {
@@ -44,17 +44,5 @@ Game.sendMessageNearby = function(level, centerX, centerY, radius, message, subs
     }
 };
 
-
-/*
-Game.sendMessage = function(msgType, recipient, message, subs) {
-    if (recipient.isMessageRecipient) {
-        if (subs) {
-            var submsg = Array.prototype.slice.call(arguments, 2);
-            message = String.format.apply(this, submsg);
-        }
-        recipient.receiveMessage(message);
-    }
-};
-*/
 
 

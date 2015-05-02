@@ -15,7 +15,7 @@ Game.Player = function(template) {
         description: "This hero will surely save the day!",
         character: '@',
         foreground: '#fff',
-        background: '#000',
+        background: '',
         isHostile: false,
 
         isActor: true,      // since we don't need the generic actor mixin
@@ -31,15 +31,15 @@ Game.Player = function(template) {
             baseAttackValue: 1
         },
         sight: {
-            sightRadius: 6
+            sightRadius: 100
         },
         messageRecipient: true,
         inventoryHolder: {
             inventorySlots: 22
         },
         foodEater: {
-            maxFullness: 1000,
-            hungerRate: 1
+            maxFullness: Number.MAX_VALUE,
+            hungerRate: 0
         },
         armorUser: true,
         weaponUser: true,

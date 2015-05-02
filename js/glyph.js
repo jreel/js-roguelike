@@ -14,7 +14,7 @@ Game.Glyph = function(properties) {
     var defaults = {
         character: ' ',
         foreground: '#fff',
-        background: '#000'
+        background: ''
     };
 
     properties = applyDefaults(properties, defaults);

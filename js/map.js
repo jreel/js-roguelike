@@ -8,12 +8,14 @@
  * http://ondras.github.io/rot.js/hp/
  */
 
-// MAP: a grid (2D array) on which we place and manipulate tiles.
-
+/*
+    MAP: a grid (2D array) on which we place and manipulate tiles.
+*/
 
 Game.Map = function(grid) {
     // TODO: update for different tilesets?
     this.grid = grid;
+    this.area = null;       // should be set by the Area that constructed it
     // cache width and height based on the dimensions
     // of the grid array
     this.width = grid.length;
@@ -97,20 +99,19 @@ Game.Map.prototype.isAreaTiled = function(xStart, yStart, xEnd, yEnd, tile) {
     return true;
 };
 
-Game.Map.prototype.isEmptyFloor = function(x, y, area) {
-    area = area || Game.currentWorld.currentArea;
+Game.Map.prototype.isEmptyFloor = function(x, y) {
     // Check if the tile is floor and unoccupied
     // TODO: replace Game.Tile ref with tileset ref
-    return this.getTile(x, y) == Game.Tile.floorTile && !area.getEntityAt(x, y);
+    return this.getTile(x, y).isWalkable && !this.area.getEntityAt(x, y);
 };
 
-Game.Map.prototype.getRandomFloorPosition = function(area) {
+Game.Map.prototype.getRandomFloorPosition = function() {
     // Get coordinates of a random unoccupied floor tile
     var x, y;
     do {
         x = Math.floor(Math.random() * this.width);
         y = Math.floor(Math.random() * this.height);
-    } while (!this.isEmptyFloor(x, y, area));
+    } while (!this.isEmptyFloor(x, y));
     return {x: x, y: y};
 };
 

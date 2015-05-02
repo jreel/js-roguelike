@@ -20,6 +20,7 @@ function sortNumber (a, b) {
 
 // check if n is a power of 2
 function isPowerOf2(n) {
+    if (isNaN(n)) {return false;}
     return ((n !== 0) && !(n & (n - 1)));
 }
 
@@ -28,6 +29,50 @@ function nearestPowerOf2(n) {
     if (isPowerOf2(n)) { return n; }
     //return Math.pow(2, Math.round(Math.log(n) / Math.LN2));
     return 1 << (Math.round(Math.log(n) / Math.LN2));
+}
+
+// get an array of object keys, sorted by the values
+// from http://www.ifadey.com/2013/04/sort-javascript-object-by-key-or-value/
+function getKeysSortedByValue(obj) {
+    var keys = [];
+
+    // first own property names are extracted,
+    // then the map method is used to transform each
+    // key-value pair into an array [key, value].
+    // In the end, map returns a 2D array in which
+    // the outer array contains all the smaller
+    // [key, value] arrays.
+    // The 2D array is then sorted on index [1]
+    // (because this is where the value is stored).
+    // The final keys array is made in the forEach.
+    Object.keys(obj)
+        .map(function(k) {
+                 return [k, obj[k]];
+             }
+    )
+        .sort(function(a, b) {
+                  if (a[1] < b[1]) {return -1;}
+                  if (a[1] > b[1]) {return 1;}
+                  return 0;
+              }
+    )
+        .forEach(function(d) {
+                     keys.push(d[0]);
+                 }
+    );
+    //now keys array contain keys of obj in sorted order of values
+    return keys;
+}
+
+function getSortedValues(obj, sortfn) {
+    var values = [];
+    for (var prop in obj) {
+        if (obj.hasOwnProperty(prop)) {
+            values.push(obj[prop]);
+        }
+    }
+    values.sort(sortfn);
+    return values;
 }
 
 // swap two elements in an array
