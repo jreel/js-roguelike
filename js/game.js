@@ -28,11 +28,11 @@ var Game = {
     screenWidth: 40,
     screenHeight: 30,
     msgScreenHeight: 10,
-    numLevels: 10,
 
     // TODO: extra players, player creation routine
-    thePlayer: null,
-    theWorld: null,
+    player: null,
+    currentWorld: null,
+    worlds: [],
     gameOver: false,
 
     Templates: {
@@ -47,8 +47,8 @@ var Game = {
         this.displays.main = new ROT.Display({
                                         width: this.screenWidth,
                                         height: this.screenHeight,
-                                        fontSize: 18,
-                                        //fontFamily: "Segoe UI Symbol",
+                                        fontSize: 14,
+                                        fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
                                         forceSquareRatio: true,
                                         spacing: 1
                                         });
@@ -57,7 +57,7 @@ var Game = {
                                         width: this.screenWidth,
                                         height: this.msgScreenHeight,
                                         fontSize: 14,
-                                        //fontFamily: "Segoe UI Symbol",
+                                        fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
                                         forceSquareRatio: false
                                         });
 
@@ -65,6 +65,7 @@ var Game = {
                                         width: this.screenWidth,
                                         height: 1,
                                         fontSize: 14,
+                                        fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
                                         forceSquareRatio: false
                                         });
 
@@ -72,6 +73,7 @@ var Game = {
                                     width: this.screenWidth,
                                     height: 1,
                                     fontSize: 14,
+                                    fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
                                     fontStyle: 'bold',
                                     forceSquareRatio: false
                                     });
@@ -105,11 +107,14 @@ var Game = {
         if (!this.displays.main || this.displays.main === null) {
             return;
         }
+
+        // get a window width/height that is either 90% of what's available (if <800), or the average of 800 and what's available.
         this.windowWidth = (window.innerWidth < 800) ? Math.floor(window.innerWidth * 0.90) : Math.floor((800 + window.innerWidth) / 2);
         this.windowHeight = (window.innerHeight < 600) ? Math.floor(window.innerHeight * 0.90) : Math.floor((600 + window.innerHeight) / 2);
 
         var availSize = this.displays.main.computeSize(this.windowWidth, this.windowHeight);  // returns [numCellsX, numCellsY]
 
+        // make sure screen width/height are even
         this.screenWidth = (availSize[0] % 2 === 0) ? availSize[0] : availSize[0] - 1;
         this.screenHeight = availSize[1] - this.msgScreenHeight;
         if (this.screenHeight % 2 !== 0) {
@@ -117,6 +122,8 @@ var Game = {
         }
         this.displays.main.setOptions({width: this.screenWidth, height: this.screenHeight});
 
+        // unfortunately, we have to do this separately for each display, since they may all be using
+        // slightly different font sizes/options and therefore have different available sizes
         var availSizeM = this.displays.msg.computeSize(this.windowWidth, this.windowHeight);
         this.displays.msg.setOptions({width: availSizeM[0], height: this.msgScreenHeight});
 
@@ -148,15 +155,6 @@ var Game = {
         if (!display) {
             display = 'main';
         }
-        /*
-        if (typeof display === 'object') {
-            if (display === this.displays.main) {
-                display = 'main';
-            } else if (display === this.displays.msg) {
-                display = 'msg';
-            }
-        }
-        */
 
         // If we had a screen before, notify it that we exited
         if (this.currentScreens[display] !== null) {
@@ -176,6 +174,24 @@ var Game = {
 
     setGameOver: function(gameLost) {
         this.gameOver = gameLost;
+    },
+
+    startNewGame: function() {
+        // generate the player and a starting world
+        // TODO: player generation, party system
+        this.player = new Game.Player(Game.HeroTemplates.default);
+
+        // TODO: starting script
+        var world = new Game.World();
+        Game.worlds.push(world);
+        Game.currentWorld = world;
+
+        // add player to world
+        world.currentArea.addEntityAtRandomPosition(this.player);
+
+        // Start the current area engine
+        world.currentArea.engine.start();
+
     }
 };
 
@@ -207,8 +223,9 @@ window.onload = function() {
         alert("The rot.js library isn't supported by your browser.");
     }
 };
-
+/*
 window.onresize = function() {
     Game.recalcDisplaySize();
     Game.refresh();
 };
+*/

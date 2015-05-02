@@ -94,7 +94,7 @@ Game.Tile.bedrockTile = new Game.Tile({
 
 Game.Tile.prevLevelTile = new Game.Tile({
     character: '<',
-    foreground: '#da2',     // close to 'goldenrod'
+    foreground: '#ca6',     // close to 'goldenrod'
     isWalkable: true,
     canSpawnHere: false,
     isTransparent: true
@@ -102,9 +102,33 @@ Game.Tile.prevLevelTile = new Game.Tile({
 
 Game.Tile.nextLevelTile = new Game.Tile({
     character: '>',
-    foreground: '#da2',
+    foreground: '#ca6',
     isWalkable: true,
     canSpawnHere: false,
     isTransparent: true
 });
 
+Game.Tile.holeToCavernTile = new Game.Tile({
+    character: '◯',
+    foreground: '#322',
+    isWalkable: true,
+    canSpawnHere: false,
+    isTransparent: true
+});
+
+Game.Tile.waterTile = new Game.Tile({
+    character: '≈',
+    foreground: '#08c',
+    isWalkable: false,
+    canSpawnHere: false,
+    isTransparent: true
+});
+
+Game.Tile.corridorTile = new Game.Tile({
+    character: '.',
+    foreground: '#777',
+    isWalkable: true,
+    isDiggable: false,
+    canSpawnHere: true,
+    isTransparent: true
+});

@@ -14,10 +14,10 @@
 Game.Entity = function Entity(properties) {
     var defaults = {
         name: "entity",
-        description: "This is either a creature-like object, or an object-like creature.",
+        description: "",
         x: 0,
         y: 0,
-        level: null,
+        area: null,
         isAlive: true,
         speed: 1
     };
@@ -43,9 +43,9 @@ Game.Entity.prototype.setPosition = function(x, y) {
     // update position
     this.x = x;
     this.y = y;
-    // if the entity is on a level, notify the level that the entity has moved
-    if (this.level) {
-        this.level.updateEntityPosition(this, oldX, oldY);
+    // if the entity is on a area, notify the area that the entity has moved
+    if (this.area) {
+        this.area.updateEntityPosition(this, oldX, oldY);
     }
 };
 
@@ -59,10 +59,10 @@ Game.Entity.prototype.kill = function(message) {
 
     // check if it was the player who died, and if so
     // call their act method to handle things
-    if (this === Game.thePlayer) {
+    if (this === Game.player) {
         this.act();
     } else {
-        this.level.removeEntity(this);
+        this.area.removeEntity(this);
     }
 };
 

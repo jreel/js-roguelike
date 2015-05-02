@@ -7,6 +7,176 @@
  * http://ondras.github.io/rot.js/hp/
  */
 
+
+// easy way to check/assign defaults for function parameters
+function defaultTo(parameter, defaultValue) {
+    return (typeof parameter == 'undefined') ? defaultValue : parameter;
+}
+
+// numeric comparator for array.sort() function
+function sortNumber (a, b) {
+    return a - b;
+}
+
+// check if n is a power of 2
+function isPowerOf2(n) {
+    if (isNaN(n)) {return false;}
+    return ((n !== 0) && !(n & (n - 1)));
+}
+
+// get closest power of 2
+function nearestPowerOf2(n) {
+    if (isPowerOf2(n)) { return n; }
+    //return Math.pow(2, Math.round(Math.log(n) / Math.LN2));
+    return 1 << (Math.round(Math.log(n) / Math.LN2));
+}
+
+// get an array of object keys, sorted by the values
+// from http://www.ifadey.com/2013/04/sort-javascript-object-by-key-or-value/
+function getKeysSortedByValue(obj) {
+    var keys = [];
+
+    // first own property names are extracted,
+    // then the map method is used to transform each
+    // key-value pair into an array [key, value].
+    // In the end, map returns a 2D array in which
+    // the outer array contains all the smaller
+    // [key, value] arrays.
+    // The 2D array is then sorted on index [1]
+    // (because this is where the value is stored).
+    // The final keys array is made in the forEach.
+    Object.keys(obj)
+        .map(function(k) {
+                 return [k, obj[k]];
+             }
+    )
+        .sort(function(a, b) {
+                  if (a[1] < b[1]) {return -1;}
+                  if (a[1] > b[1]) {return 1;}
+                  return 0;
+              }
+    )
+        .forEach(function(d) {
+                     keys.push(d[0]);
+                 }
+    );
+    //now keys array contain keys of obj in sorted order of values
+    return keys;
+}
+
+function getSortedValues(obj, sortfn) {
+    var values = [];
+    for (var prop in obj) {
+        if (obj.hasOwnProperty(prop)) {
+            values.push(obj[prop]);
+        }
+    }
+    values.sort(sortfn);
+    return values;
+}
+
+// swap two elements in an array
+// from nolithius dodworldgen
+// https://code.google.com/p/dance-of-death-worldgen/source/browse/trunk/src/com/nolithius/dodworldgen/utils/ArrayUtils.as
+Array.prototype.swap = Array.prototype.swap || function(firstIndex, secondIndex) {
+    var temp = this[firstIndex];
+    this[firstIndex] = this[secondIndex];
+    this[secondIndex] = temp;
+};
+
+// given an array, normalize as a percent of the largest value
+function normalizeArray(array) {
+
+    /*
+    var ratio = Math.max.apply(Math, array) / 100;
+
+    var normalizedArray = array.map(function(v) {
+        return v / ratio;
+    });
+    */
+    var len = array.length;
+
+    // find the largest value in data
+    var largest = -Infinity;
+    for (var i = 0; i < len; i++) {
+        if (array[i] > largest) {
+            largest = array[i];
+        }
+    }
+
+    // normalize
+    var results = new Array(len);
+    for (i = 0; i < len; i++) {
+        results[i] = array[i] / largest;
+    }
+    return results;
+};
+
+// given a grid, normalize as a percent of the largest value
+function normalizeGrid(data) {
+
+    var width = data.length;
+    var height = data[0].length;
+
+    // find the largest value in data
+    var largest = -Infinity;
+    for (var x = 0; x < width; x++) {
+        for (var y = 0; y < height; y++) {
+            if (data[x][y] > largest) {
+                largest = data[x][y];
+            }
+        }
+    }
+
+    // normalize
+    var results = new Array(width);
+    for (var i = 0; i < width; i++) {
+        results[i] = new Array(height);
+    }
+    for (x = 0; x < width; x++) {
+        for (y = 0; y < height; y++) {
+            results[x][y] = data[x][y] / largest;
+        }
+    }
+    return results;
+};
+
+// given a grid, scale all the data as a percent of
+// the range defined by the smallest and largest values
+function scaleGrid(data) {
+    var width = data.length;
+    var height = data[0].length;
+
+    // find the largest and smallest values in data
+    var largest = -Infinity;
+    var smallest = Number.MAX_VALUE;
+    for (var x = 0; x < width; x++) {
+        for (var y = 0; y < height; y++) {
+            var d = data[x][y];
+            if (d > largest) {
+                largest = d;
+            }
+            if (d < smallest) {
+                smallest = d;
+            }
+        }
+    }
+
+    // scale to smallest/largest
+    var range = largest - smallest;
+    var results = new Array(width);
+    for (var i = 0; i < width; i++) {
+        results[i] = new Array(height);
+    }
+    for (x = 0; x < width; x++) {
+        for (y = 0; y < height; y++) {
+            results[x][y] = (data[x][y] - smallest) / range;
+        }
+    }
+    return results;
+};
+
+
 // augment function (mainly for use with mixins);
 // copies properties from mixin to destination.prototype.
 //
@@ -71,16 +241,15 @@ function copyWithChanges(source, changes) {
 
 // regular expression indexOf for arrays
 // from http://creativenotice.com/2013/07/regular-expression-in-array-indexof/
-if (typeof Array.prototype.reIndexOf === 'undefined') {
-    Array.prototype.reIndexOf = function (rx) {
-        for (var i in this) {
-            if (this[i].toString().match(rx)) {
-                return i;
-            }
+Array.prototype.regexIndexOf = Array.prototype.regexIndexOf || function (rx) {
+    for (var i in this) {
+        if (this[i].toString().match(rx)) {
+            return i;
         }
-        return -1;
-    };
-}
+    }
+    return -1;
+};
+
 
 // strip formatting tokens out of a ROT color-formatted string.
 // note that this is implemented specifically to look for and
@@ -97,15 +266,59 @@ function stripTokens(str) {
 }
 
 
-// Return a random integer between min and max
+// Return a random integer between and including min and max
 function randomInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
+    return Math.floor(ROT.RNG.getUniform() * (max - min + 1)) + min;
+}
+
+// Return a random float between min (inclusive) and max (exclusive)
+function randomFloat(min, max) {
+    return ROT.RNG.getUniform() * (max - min) + min;
+}
+
+// Return a random integer between 0 and n-1
+// (similar to python randrange() function)
+function randRange(n) {
+    return Math.floor(ROT.RNG.getUniform() * n);
 }
 
 // Return a random integer from a normal distribution
 function randomNormalInt(mean, std) {
     return Math.floor(ROT.RNG.getNormal(mean, std));
 }
+
+// Return a random percentage (wrapper for ROT function)
+function randomPercent() {
+    return ROT.RNG.getPercentage();
+}
+
+// Return a random number from a normal distribution (wrapper for ROT function)
+function randomNormal(mean, std) {
+    return ROT.RNG.getNormal(mean, std);
+}
+
+// Gaussian probability density function
+// by Olly Oechsle, http://www.ollysco.de/2012/04/gaussian-normal-functions-in-javascript.html
+/**
+ * Returns a normal probability density function for the given parameters.
+ * The function will return the probability for given values of X
+ *
+ * @param {Number} [mean = 0] The center of the peak, usually at X = 0
+ * @param {Number} [standardDeviation = 1.0] The width / standard deviation of the peak
+ * @param {Number} [maxHeight = 1.0] The maximum height of the peak, usually 1
+ * @returns {Function} A function that will return the value of the distribution at given values of X
+ */
+Math.getGaussianFunction = function(mean, standardDeviation, maxHeight) {
+
+    mean = isNaN(mean) ? 0.0 : mean;
+    standardDeviation = isNaN(standardDeviation) ? 1.0 : standardDeviation;
+    maxHeight = isNaN(maxHeight) ? 1.0 : maxHeight;
+
+    return function getNormal(x) {
+        return maxHeight * Math.pow(Math.E, -Math.pow(x - mean, 2) / (2 * (standardDeviation * standardDeviation)));
+    }
+};
+
 
 // Given a hashtable of values and chances, return a weighted random value.
 // ideally, totalChance will have been cached as a property on the parent object
