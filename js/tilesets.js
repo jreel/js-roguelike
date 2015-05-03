@@ -8,9 +8,9 @@ Game.Tilesets.WorldMapTiles = {
 
     POLAR_ICECAP: {
         name: '',
-        character: '.',
-        foreground: '#639BFF',
-        background: '#CBDBFC',
+        character: '~',
+        foreground: '#EEFFFF',
+        background: '#000',
         isWalkable: true,
         isDiggable: false,
         canSpawnHere: false,
@@ -18,9 +18,9 @@ Game.Tilesets.WorldMapTiles = {
     },
     GLACIER: {
         name: '',
-        character: '〽',
-        foreground: '#639BFF',
-        background: '#CBDBFC',
+        character: 'ʌ',
+        foreground: '#87CEFA',
+        background: '#000',
         isWalkable: true,
         isDiggable: false,
         canSpawnHere: false,
@@ -29,8 +29,8 @@ Game.Tilesets.WorldMapTiles = {
     DEEP_WATER: {
         name: '',
         character: '≈',
-        foreground: '#306082',
-        background: '#639BFF',
+        foreground: '#0000CD',
+        background: '#000',
         isWalkable: true,
         isDiggable: false,
         canSpawnHere: false,
@@ -39,8 +39,8 @@ Game.Tilesets.WorldMapTiles = {
     SHALLOW_WATER: {
         name: '',
         character: '≈',
-        foreground: '#5FCDE4',
-        background: '#639BFF',
+        foreground: '#4169E1',
+        background: '#000',
         isWalkable: true,
         isDiggable: false,
         canSpawnHere: false,
@@ -48,44 +48,44 @@ Game.Tilesets.WorldMapTiles = {
     },
 
     // un-forested mountain areas
-    SNOWCAP:  {
+    SNOWCAP: {
         name: '',
-        character: '〽',
+        character: '^',
         foreground: '#FFFFFF',
-        background: '#9BADB7',
+        background: '#000',
         isWalkable: true,
         isDiggable: false,
         canSpawnHere: false,
         isTransparent: true
     },
     // alpine: above the treeline, but ground vegetation still possible
-    ALPINE:  {
+    ALPINE: {
         name: '',
-        character: '〽',
-        foreground: '#9BADB7',
-        background: '#847E87',
+        character: 'ʌ',
+        foreground: '#809080',
+        background: '#000',
         isWalkable: true,
         isDiggable: false,
         canSpawnHere: false,
         isTransparent: true
     },
     // mesas, plateaus, etc
-    BADLANDS:  {
+    BADLANDS: {
         name: '',
-        character: '〽',
-        foreground: '#DF7126',
-        background: '#D9A066',
+        character: 'Ѧ',
+        foreground: '#EF7347',
+        background: '#000',
         isWalkable: true,
         isDiggable: false,
         canSpawnHere: false,
         isTransparent: true
     },
     // cold version of the above
-    CRAG:  {
+    CRAG: {
         name: '',
-        character: '〽',
-        foreground: '#696A6A',
-        background: '#847E87',
+        character: 'Ѧ',
+        foreground: '#595959',
+        background: '#000',
         isWalkable: true,
         isDiggable: false,
         canSpawnHere: false,
@@ -93,41 +93,41 @@ Game.Tilesets.WorldMapTiles = {
     },
 
     // coastal or very low-elevation areas
-    COLD_BEACH:  {
+    COLD_BEACH: {
         name: '',
         character: '~',
-        foreground: '#EEC39A',
-        background: '#9BADB7',
+        foreground: '#B0C4DE',
+        background: '#000',
         isWalkable: true,
         isDiggable: false,
         canSpawnHere: false,
         isTransparent: true
     },
-    BEACH:  {
+    BEACH: {
         name: '',
         character: '~',
-        foreground: '#9BADB7',
-        background: '#EEC39A',
+        foreground: '#DEB887',
+        background: '#000',
         isWalkable: true,
         isDiggable: false,
         canSpawnHere: false,
         isTransparent: true
     },
-    MARSHLAND:  {
-        name: '',
-        character: '⇣',
-        foreground: '#6ABE30',
-        background: '#37946E',
-        isWalkable: true,
-        isDiggable: false,
-        canSpawnHere: false,
-        isTransparent: true
-    },
-    SWAMP:  {
+    MARSHLAND: {
         name: '',
         character: '↡',
-        foreground: '#8A6F30',
-        background: '#4B692F',
+        foreground: '#008080',
+        background: '#000',
+        isWalkable: true,
+        isDiggable: false,
+        canSpawnHere: false,
+        isTransparent: true
+    },
+    SWAMP: {
+        name: '',
+        character: '⇣',
+        foreground: '#556B2F',
+        background: '#000',
         isWalkable: true,
         isDiggable: false,
         canSpawnHere: false,
@@ -136,21 +136,21 @@ Game.Tilesets.WorldMapTiles = {
 
     // GROWTH_AREA: plains, hills, base of mountains
     // high latitude, low temperature
-    TUNDRA:  {
+    TUNDRA: {
         name: '',
-        character: '⺍',
-        foreground: '#4B692F',
-        background: '#9BADB7',
+        character: '"',
+        foreground: '#5F9EA0',
+        background: '#000',
         isWalkable: true,
         isDiggable: false,
         canSpawnHere: false,
         isTransparent: true
     },
-    COLD_BARRENS:  {
+    COLD_BARRENS: {
         name: '',
         character: '-',
-        foreground: '#847E87',
-        background: '#9BADB7',
+        foreground: '#778899',
+        background: '#000',
         isWalkable: true,
         isDiggable: false,
         canSpawnHere: false,
@@ -158,31 +158,31 @@ Game.Tilesets.WorldMapTiles = {
     },
 
     // taiga: boreal forest (coniferous)
-    TAIGA:  {
+    TAIGA: {
         name: '',
         character: '♠',
-        foreground: '#4B692F',
-        background: '#8F974A',
+        foreground: '#123823',
+        background: '#000',
         isWalkable: true,
         isDiggable: false,
         canSpawnHere: false,
         isTransparent: true
     },
-    COLD_SCRUB:  {
+    COLD_SCRUB: {
         name: '',
         character: '*',
-        foreground: '#524B24',
-        background: '#8F974A',
+        foreground: '#556B2F',
+        background: '#000',
         isWalkable: true,
         isDiggable: false,
         canSpawnHere: false,
         isTransparent: true
     },
-    COLD_DESERT:  {
+    COLD_DESERT: {
         name: '',
-        character: '჻',
-        foreground: '#847E87',
-        background: '#9BADB7',
+        character: ',',
+        foreground: '#778899',
+        background: '#000',
         isWalkable: true,
         isDiggable: false,
         canSpawnHere: false,
@@ -193,48 +193,48 @@ Game.Tilesets.WorldMapTiles = {
     RAINFOREST: {
         name: '',
         character: '↟',
-        foreground: '#323C39',
-        background: '#4B692F',
+        foreground: '#006400',
+        background: '#000',
         isWalkable: true,
         isDiggable: false,
         canSpawnHere: false,
         isTransparent: true
     },
-    DECIDUOUS:  {
+    DECIDUOUS: {
         name: '',
         character: '♧',
-        foreground: '#6ABE30',
-        background: '#4B692F',
+        foreground: '#228B22',
+        background: '#000',
         isWalkable: true,
         isDiggable: false,
         canSpawnHere: false,
         isTransparent: true
     },
-    SHRUBLAND:  {
+    SHRUBLAND: {
         name: '',
-        character: '♣',
-        foreground: '#4B692F',
-        background: '#8F974A',
+        character: '♧',
+        foreground: '#6B8E23',
+        background: '#000',
         isWalkable: true,
         isDiggable: false,
         canSpawnHere: false,
         isTransparent: true
     },
-    GRASSLAND:  {
+    GRASSLAND: {
         name: '',
-        character: '٧',
-        foreground: '#99E550',
-        background: '#8F974A',
+        character: '"',
+        foreground: '#9ACD32',
+        background: '#000',
         isWalkable: true,
         isDiggable: false,
         canSpawnHere: false,
         isTransparent: true
     },
-    DUSTBOWL:  {
+    DUSTBOWL: {
         name: '',
-        character: '჻',
-        foreground: '#8F974A',
-        background: '#EEC39A',
+        character: '.',
+        foreground: '#BDB76B',
+        background: '#000',
         isWalkable: true,
         isDiggable: false,
         canSpawnHere: false,
@@ -242,21 +242,21 @@ Game.Tilesets.WorldMapTiles = {
     },
 
     // subtropical types
-    SCRUB:  {
+    SCRUB: {
         name: '',
         character: '*',
-        foreground: '#8A6F30',
-        background: '#D9A066',
+        foreground: '#CD853F',
+        background: '#000',
         isWalkable: true,
         isDiggable: false,
         canSpawnHere: false,
         isTransparent: true
     },
-    DESERT:  {
+    DESERT: {
         name: '',
-        character: '`',
-        foreground: '#FBF236',
-        background: '#EEC39A',
+        character: ',',
+        foreground: '#FEF87A',
+        background: '#000',
         isWalkable: true,
         isDiggable: false,
         canSpawnHere: false,
@@ -264,11 +264,11 @@ Game.Tilesets.WorldMapTiles = {
     },
 
     // tropical types
-    JUNGLE:  {
+    JUNGLE: {
         name: '',
         character: '✾',
-        foreground: '#6ABE30',
-        background: '#37946E',
+        foreground: '#006400',
+        background: '#000',
         isWalkable: true,
         isDiggable: false,
         canSpawnHere: false,
@@ -277,13 +277,12 @@ Game.Tilesets.WorldMapTiles = {
     SAVANNA: {
         name: '',
         character: '⇡',
-        foreground: '#4B692F',
-        background: '#D9A066',
+        foreground: '#B8960B',
+        background: '#000',
         isWalkable: true,
         isDiggable: false,
         canSpawnHere: false,
         isTransparent: true
     }
 };
-
 Game.WorldTilesRepo = new Game.Repository('worldMapTiles', Game.Tile, Game.Tilesets.WorldMapTiles);
