@@ -22,7 +22,7 @@ Game.Templates.Items = {
 
     mushroom: {
         name: 'mushroom',
-        character: '⍾',
+        character: 'ϙ',
         foreground: '#784',
         edible: {
             foodValue: 20
@@ -31,7 +31,7 @@ Game.Templates.Items = {
 
     rock: {
         name: 'rock',
-        character: '*',
+        character: '•',
         foreground: '#678',
         edible: false
     },
@@ -47,7 +47,7 @@ Game.Templates.Items = {
 
     cheese: {
         name: 'piece of cheese',
-        character: '⪩',
+        character: '►',
         foreground: '#fc0',
         edible: {
             foodValue: 50
@@ -104,7 +104,7 @@ Game.Templates.Items = {
 
     leathervest: {
         name: 'leather vest',
-        character: 'ᗨ',
+        character: '⍌',
         foreground: "#940",
         equippable: {
             defenseValue: 2,
@@ -115,7 +115,7 @@ Game.Templates.Items = {
 
     chainmail: {
         name: 'chainmail',
-        character: 'ᗨ',
+        character: '¥',
         foreground: "#999",
         equippable: {
             defenseValue: 4,
@@ -126,7 +126,7 @@ Game.Templates.Items = {
 
     platearmor: {
         name: 'plate armor',
-        character: 'ᗨ',
+        character: 'Ѫ',
         foreground: "#aad",
         equippable: {
             defenseValue: 6,
@@ -164,8 +164,21 @@ Game.Templates.Items = {
 
     meatstick: {
         name: 'haunch of meat',
-        character: 'ዖ',
+        character: 'ǫ',
         foreground: "#820",
+        edible: {
+            foodValue: 50
+        },
+        equippable: {
+            attackValue: 1,
+            isWieldable: true
+        }
+    },
+
+    baguette: {
+        name: 'baguette',
+        character: '/',
+        foreground: "#EB8",
         edible: {
             foodValue: 50
         },

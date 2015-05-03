@@ -48,7 +48,7 @@ var Game = {
                                         width: this.screenWidth,
                                         height: this.screenHeight,
                                         fontSize: 14,
-                                        fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
+                                        //fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
                                         forceSquareRatio: true,
                                         spacing: 1
                                         });
@@ -57,7 +57,7 @@ var Game = {
                                         width: this.screenWidth,
                                         height: this.msgScreenHeight,
                                         fontSize: 14,
-                                        fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
+                                        //fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
                                         forceSquareRatio: false
                                         });
 
@@ -65,7 +65,7 @@ var Game = {
                                         width: this.screenWidth,
                                         height: 1,
                                         fontSize: 14,
-                                        fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
+                                        //fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
                                         forceSquareRatio: false
                                         });
 
@@ -73,7 +73,7 @@ var Game = {
                                     width: this.screenWidth,
                                     height: 1,
                                     fontSize: 14,
-                                    fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
+                                    //fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
                                     fontStyle: 'bold',
                                     forceSquareRatio: false
                                     });
