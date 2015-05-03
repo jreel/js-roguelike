@@ -91,8 +91,8 @@ Game.Screen.playScreen = {
             height: Game.screenHeight + 1,
             //fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
             fontSize: 14,
-            forceSquareRatio: true,
-            spacing: 1
+            //forceSquareRatio: true,
+            spacing: 0.9
         });
 
         Game.startNewGame();
@@ -116,7 +116,8 @@ Game.Screen.playScreen = {
             width: Game.screenWidth,
             fontSize: 14,
             //fontFamily: "Segoe UI Symbol",
-            forceSquareRatio: true
+            //forceSquareRatio: true
+            spacing: 0.9
         });
 
         var screenWidth = Game.screenWidth;
