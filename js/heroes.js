@@ -28,7 +28,7 @@ Game.HeroTemplates = {
             baseAttackValue: 3
         },
         sight: {
-            sightRadius: 100
+            sightRadius: 20
         },
         holdsInventory: {
             inventorySlots: 22

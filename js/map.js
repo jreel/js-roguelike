@@ -15,7 +15,8 @@
 Game.Map = function(grid) {
     // TODO: update for different tilesets?
     this.grid = grid;
-    this.area = null;       // should be set by the Area that constructed it
+    this.area = null;       // should be set by the Area that owns it
+    this.wrap = false;      // should also be set by the Area that owns it
     // cache width and height based on the dimensions
     // of the grid array
     this.width = grid.length;
@@ -35,8 +36,26 @@ Game.Map = function(grid) {
     }
 };
 
+Game.Map.prototype.getWrapped = function(x) {
+    if (!this.wrap) {
+        return x;
+    }
+    if (x < 0) {
+        x += this.width;
+    } else if (x >= this.width) {
+        x %= this.width;
+    }
+    return x;
+};
+
 // Gets the tile for a given coordinate
 Game.Map.prototype.getTile = function(x, y) {
+    // if map should wrap, we should re-calculate the
+    // correct (wrapped) x-coordinate
+    if (this.wrap) {
+        x = this.getWrapped(x);
+    }
+
     // Make sure we are inside bounds.
     // If not, return null tile.
     if (!this.checkX(x) || !this.checkY(y)) {
@@ -74,10 +93,6 @@ Game.Map.prototype.getNeighborTiles = function(x, y) {
 };
 
 Game.Map.prototype.isAdjacent = function(x, y, tile) {
-    if (!this.checkX(x - 1) || !this.checkX(x + 1) || !this.checkY(y - 1) || !this.checkY(y + 1)) {
-        return false;
-    }
-
     return (this.getTile(x - 1, y) === tile || this.getTile(x + 1, y) === tile ||
             this.getTile(x, y - 1) === tile || this.getTile(x, y + 1) === tile);
 };
