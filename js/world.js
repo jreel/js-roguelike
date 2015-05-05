@@ -18,6 +18,8 @@ Game.World = function(options) {
     var mapSize = options.mapSize || 256;
     mapSize = nearestPowerOf2(mapSize);
 
+    this.mapSize = mapSize;
+
     this.worldName = "";            // Markov generated?
     this.areas = [];            // populated from createArea() method
 
@@ -32,7 +34,13 @@ Game.World = function(options) {
                                     biome: "WORLD",
                                     map: worldMap });
 
+
+
     this.currentArea = this.overWorld;
+
+    this.placeTowns(15);
+
+    //this.findContinents();
 
 };
 
@@ -63,6 +71,76 @@ Game.World.prototype.addArea = function(options) {
     this.areas.push(area);
 
     return area;
+};
+
+Game.World.prototype.findGoodTownLocations = function() {
+    var biomesArray = getKeysSortedByValue(Game.BiomeTypes.biomes);
+
+    var favoredBiomes = ["COLD_BEACH", "BEACH", "TAIGA", "RAINFOREST", "DECIDUOUS",
+                         "SHRUBLAND", "GRASSLAND", "JUNGLE", "SAVANNA"];
+
+    var disfavoredBiomes = ["WORLD", "POLAR_ICECAP", "GLACIER", "DEEP_WATER", "SHALLOW_WATER",
+                          "SNOWCAP", "BADLANDS", "CRAG", "MARSHLAND", "SWAMP",
+                          "TUNDRA", "COLD_BARRENS", "COLD_DESERT", "DUSTBOWL", "DESERT"];
+
+    var neverBiomes = ["WORLD", "GLACIER", "DEEP_WATER", "SHALLOW_WATER"];
+
+    var okBiomes = arrayDiff(biomesArray, disfavoredBiomes);
+    var desperateBiomes = arrayDiff(biomesArray, neverBiomes);
+
+    var cellBiome;
+
+    // iterate over the map, store a collection of x,y in good biomes
+    // try the best biomes first
+    var goodLocs = [];
+    for (var x = 0; x < this.mapSize; x++) {
+        for (var y = 0; y < this.mapSize; y++) {
+            cellBiome = this.getBiomeName(x, y);
+            if (favoredBiomes.indexOf(cellBiome) !== -1) {
+                goodLocs.push({x:x, y:y});
+            }
+        }
+    }
+
+    // if we didn't find any tiles in the best biomes, try the "ok" ones
+    if (goodLocs.length < 1) {
+        for (x = 0; x < this.mapSize; x++) {
+            for (y = 0; y < this.mapSize; y++) {
+                cellBiome = this.getBiomeName(x, y);
+                if (okBiomes.indexOf(cellBiome) !== -1) {
+                    goodLocs.push({x:x, y:y});
+                }
+            }
+        }
+    }
+
+    // if we still didn't find any, then our world is a harsh one,
+    // and we need to search the "desperate" biomes array
+    if (goodLocs.length < 1) {
+        for (x = 0; x < this.mapSize; x++) {
+            for (y = 0; y < this.mapSize; y++) {
+                cellBiome = this.getBiomeName(x, y);
+                if (desperateBiomes.indexOf(cellBiome) !== -1) {
+                    goodLocs.push({x:x, y:y});
+                }
+            }
+        }
+    }
+
+    //goodLocs = goodLocs.randomize();
+
+    return goodLocs;
+
+};
+
+Game.World.prototype.placeTowns = function(amount) {
+    var goodLocs = this.findGoodTownLocations();
+    var map = this.overWorld.map.grid;
+    var townLoc;
+    for (var i = 0; i < amount; i++) {
+        townLoc = goodLocs.random();
+        map[townLoc.x][townLoc.y] = Game.WorldTilesRepo.create("TOWN");
+    }
 };
 
 Game.World.prototype.generateWorldMap = function(mapSize) {
@@ -98,6 +176,57 @@ Game.World.prototype.generateWorldMap = function(mapSize) {
     var worldMap = new Game.Map(tiles);
     return worldMap;
 
+};
+
+Game.World.prototype.findContinents = function() {
+    var map = this.overWorld.map;
+    var mapSize = map.width;
+
+    this.regions = new Array(mapSize);
+    for (var x = 0; x < mapSize; x++) {
+        this.regions[x] = new Array(mapSize);
+        // fill with zeroes
+        for (var y = 0; y < mapSize; y++) {
+            this.regions[x][y] = 0;
+        }
+    }
+
+    var region = 1;
+    // iterate through all tiles searching for a tile that
+    // can be used as the starting point for a flood fill
+    for (x = 0; x < mapSize; x++) {
+        for (y = 0; y < mapSize; y++) {
+            if (map.getTile(x, y).isWalkable &&
+                this.regions[x][y] === 0) {
+
+                map.fillRegion(region, x, y, this.regions);
+
+                region++;
+            }
+        }
+    }
+
+    /*
+    // now convert regions array to continents
+    var continents = {};
+    var mapCell;
+    for (x = 0; x < mapSize; x++) {
+        for (y = 0; y < mapSize; y++) {
+            region = this.regions[x][y];
+            if (region !== 0) {
+                if (!continents[region]) {
+                    continents[region] = [];
+                }
+                mapCell = x + ',' + y;
+                if (continents[region].indexOf(mapCell) === -1) {
+                    continents[region].push(mapCell);
+                }
+            }
+        }
+    }
+
+    return continents;
+*/
 };
 
 Game.World.prototype.getBiomeName = function(x, y) {
@@ -141,13 +270,14 @@ Game.World.prototype.generateDataMap = function(mapSize) {
         dataMap[i] = new Array(mapSize);
     }
     // Step 1: generate Height Map -> elevation for each x,y
-    dataMap = this.generateElevationMap(dataMap);
+    // this will update the dataMap bits, and also return the original heightmap
+    var elevationMap = this.generateElevationMap(dataMap);
 
     // Step 2: generate Precipitation map = heightMap mask -> "moisture" for each x,y
-    dataMap = this.generatePrecipitationMap(dataMap);
+    var precipitationMap = this.generatePrecipitationMap(dataMap);
 
     // Step 3: generate Temperature gradient
-    dataMap = this.generateTemperatureMap(dataMap);
+    var temperatureMap = this.generateTemperatureMap(dataMap);
 
     // Step 4: each x,y for the map should have had bits set in Steps 1-3.
     // We can use methods to pull those out as needed!
@@ -234,7 +364,7 @@ Game.World.prototype.generateElevationMap = function(mapToUpdate) {
         }
     }
 
-    return mapToUpdate;
+    return eMap;
 };
 
 Game.World.prototype.generatePrecipitationMap = function(mapToUpdate) {
@@ -295,7 +425,7 @@ Game.World.prototype.generatePrecipitationMap = function(mapToUpdate) {
         }
     }
 
-    return mapToUpdate;
+    return pMap;
 };
 
 Game.World.prototype.generateTemperatureMap = function(mapToUpdate) {
@@ -371,12 +501,18 @@ Game.World.prototype.generateTemperatureMap = function(mapToUpdate) {
     // we can loop through our map applying our
     // temperature gradient function, along with the
     // appropriate zone based on the value.
+    var tMap = [];
+    for (var i = 0; i < mapSize; i++) {
+        tMap[i] = new Array(mapSize);
+    }
+
     var thisTemp;
     for (var y = 0; y < mapSize; y++) {
         for (var x = 0; x < mapSize; x++) {
             // let's vary slightly the value passed in,
             // so that there's some variety in our temperature "bands"
             thisTemp = temperatureGradient(randomNormalInt(y, 5));
+            tMap[x][y] = thisTemp;
             for (var key, k = 0; k < cutoffPercents.length; k++) {
                 if (thisTemp <= cutoffPercents[k]) {
                     // set the appropriate bit in the map
@@ -388,14 +524,14 @@ Game.World.prototype.generateTemperatureMap = function(mapToUpdate) {
         }
     }
 
-    return mapToUpdate;
+    return tMap;
 };
 
 
 
 
 
-Game.World.prototype.randomLevel = function(params) {
+Game.World.prototype.randomArea = function(params) {
     params = params || {};
     // the defaults here should almost always result in a area size that
     // is larger than the game screen.

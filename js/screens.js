@@ -149,16 +149,21 @@ Game.Screen.playScreen = {
             }
         );
 
-         // Render visible and explored map cells
-        //for (var x = topLeftX; x < topLeftX + screenWidth; x++) {
-            //for (var y = topLeftY; y < topLeftY + screenHeight; y++) {
-        var x, y, translated;
-        for (var sx = 0; sx < screenWidth; sx++) {
-            for (var sy = 0; sy < screenHeight; sy++) {
+        // calculate the map coordinates at the top left of the screen
+        // (based on centering the view on the player and
+        //  wrapping the map if needed)
+        var topLeft = this.getMapCoordinates(0, 0);
 
-                translated = this.getMapCoordinates(sx, sy);
-                x = translated.x;
-                y = translated.y;
+         // Render visible and explored map cells
+        var x, y, sx, sy;
+        for (sx = 0, x = topLeft.x; sx < screenWidth; sx++, x++) {
+            for (sy = 0, y = topLeft.y; sy < screenHeight; sy++, y++) {
+
+                // if our x has gone past the mapWidth, recalculate and reset
+                if (x >= mapWidth) {
+                    x = this.getMapCoordinates(sx, sy).x;
+                }
+
                 if (map.isExplored(x, y)) {
                     // fetch the glyph for the tile and render it
                     // to the screen at the offset position

@@ -11,7 +11,6 @@
 Game.Behaviors = {
 
     fungalGrowth: function(owner) {
-        owner = owner || this;
         var area = owner.area;
         if (owner.growthRemaining <=0 || ROT.RNG.getPercentage() > owner.growPctChance) {
             return false;
@@ -48,7 +47,6 @@ Game.Behaviors = {
 
     wander: function(owner) {
         // move by 1 unit in a random direction every time this behavior is called
-        owner = owner || this;
 
         // first, ensure that we are able to move
         if (!owner.canMove) {
@@ -65,7 +63,6 @@ Game.Behaviors = {
     },
 
     hunt: function(owner) {
-        owner = owner || this;
 
         var player = Game.player;
         // first, ensure that we can see what we are trying to hunt
@@ -105,7 +102,6 @@ Game.Behaviors = {
     },
 
     zombieGrowth: function(owner) {
-        owner = owner || this;
         // don't grow if we've already grown, or if we aren't injured enough
         if (owner.hasGrown || (owner.hp / owner.maxHP) > 0.5) {
             return false;
@@ -120,7 +116,6 @@ Game.Behaviors = {
     },
 
     spawnSlime: function(owner) {
-        owner = owner || this;
         // spawn a slime only 10% of the time
         if (ROT.RNG.getPercentage() > 10) {
             return false;

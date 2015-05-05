@@ -34,6 +34,7 @@ Game.Map = function(grid) {
             this.explored[x][y] = false;
         }
     }
+
 };
 
 Game.Map.prototype.getWrapped = function(x) {
@@ -112,6 +113,58 @@ Game.Map.prototype.isAreaTiled = function(xStart, yStart, xEnd, yEnd, tile) {
         }
     }
     return true;
+};
+
+/*
+Game.Map.prototype.floodFill = function(x, y, flagsArray, flag) {
+    if (this.getTile(x,y).isWalkable && !flagsArray[x][y]) {
+        flagsArray[x][y] = flag;
+    } else {
+        return;
+    }
+    this.floodFill(x + 1, y);
+    this.floodFill(x - 1, y);
+    this.floodFill(x, y + 1);
+    this.floodFill(x, y - 1);
+};
+*/
+
+Game.Map.prototype.fillRegion = function(region, x, y, masterArray) {
+
+    if (this.wrap) {
+        x = this.getWrapped(x);
+    }
+
+    // update the region of the original tile
+    masterArray[x][y] = region;
+
+    // temporary array to loop through
+    var tiles = [{x:x, y:y}];
+    var tile;
+    var neighbors;
+
+    // keep looping while there are still tiles to process
+    while (tiles.length > 0) {
+        tile = tiles.pop();
+        neighbors = this.getNeighborTiles(tile.x, tile.y);
+        while (neighbors.length > 0) {
+            tile = neighbors.pop();
+            if (this.getTile(tile.x, tile.y).isWalkable) {
+
+                if (this.wrap) {
+                    tile.x = this.getWrapped(tile.x);
+                }
+
+                if (masterArray[tile.x][tile.y] === 0) {
+
+                    masterArray[tile.x][tile.y] = region;
+                    tiles.push(tile);
+                }
+
+            }
+        }
+    }
+
 };
 
 Game.Map.prototype.isEmptyFloor = function(x, y) {

@@ -2,6 +2,11 @@
  * Created by jreel on 4/30/2015.
  */
 
+// TODO: think about other properties of tiles.
+// for instance, water tiles.
+// isWalkable should be false, but what about
+// swimming or boating?
+
 Game.Tilesets = {};
 
 Game.Tilesets.WorldMapTiles = {
@@ -31,7 +36,7 @@ Game.Tilesets.WorldMapTiles = {
         character: '≈',
         foreground: '#0000CD',
         background: '#000',
-        isWalkable: true,
+        isWalkable: false,
         isDiggable: false,
         canSpawnHere: false,
         isTransparent: true
@@ -41,7 +46,7 @@ Game.Tilesets.WorldMapTiles = {
         character: '≈',
         foreground: '#4169E1',
         background: '#000',
-        isWalkable: true,
+        isWalkable: false,
         isDiggable: false,
         canSpawnHere: false,
         isTransparent: true
@@ -278,6 +283,18 @@ Game.Tilesets.WorldMapTiles = {
         name: '',
         character: '⇡',
         foreground: '#B8960B',
+        background: '#000',
+        isWalkable: true,
+        isDiggable: false,
+        canSpawnHere: false,
+        isTransparent: true
+    },
+
+    // other tile types
+    TOWN: {
+        name: '',
+        character: '+',
+        foreground: '#FF0000',
         background: '#000',
         isWalkable: true,
         isDiggable: false,
