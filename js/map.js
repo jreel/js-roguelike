@@ -12,18 +12,16 @@
     MAP: a grid (2D array) on which we place and manipulate tiles.
 */
 
-Game.Map = function(grid) {
+Game.Map = function(grid, tileset) {
     // TODO: update for different tilesets?
     this.grid = grid;
+    this.tileset = tileset;
     this.area = null;       // should be set by the Area that owns it
     this.wrap = false;      // should also be set by the Area that owns it
     // cache width and height based on the dimensions
     // of the grid array
     this.width = grid.length;
     this.height = grid[0].length;
-
-    // TODO: we may want to cache a default floor, wall, and bedrock tile
-    // based on the map tileset, so we can ref this.floorTile for ex.
 
     // setup array to store whether a tile has been explored
     // so that we can render it in the future
@@ -98,8 +96,12 @@ Game.Map.prototype.isAdjacent = function(x, y, tile) {
             this.getTile(x, y - 1) === tile || this.getTile(x, y + 1) === tile);
 };
 
+// check whether a rectangular region is entirely tiled with 'tile'
+// (most useful for checking for an unused area (tile == nullTile) in
+//  dungeon-building routines)
 Game.Map.prototype.isAreaTiled = function(xStart, yStart, xEnd, yEnd, tile) {
-    if (!this.checkX(xStart) || !this.checkX(xEnd) || !this.checkY(yStart) || !this.checkY(yEnd)) {
+    if (!this.checkX(xStart) || !this.checkX(xEnd) ||
+        !this.checkY(yStart) || !this.checkY(yEnd)) {
         return false;
     }
     if ((xStart > xEnd) || (yStart > yEnd)) {
@@ -113,6 +115,22 @@ Game.Map.prototype.isAreaTiled = function(xStart, yStart, xEnd, yEnd, tile) {
         }
     }
     return true;
+};
+
+Game.Map.prototype.tileArea = function(xStart, yStart, xEnd, yEnd, tile) {
+    if (!this.checkX(xStart) || !this.checkX(xEnd) ||
+        !this.checkY(yStart) || !this.checkY(yEnd)) {
+        return false;
+    }
+    if ((xStart > xEnd) || (yStart > yEnd)) {
+        return false;
+    }
+
+    for (var x = xStart; x <= xEnd; x++) {
+        for (var y = yStart; y <= yEnd; y++) {
+            this.grid[x][y] = tile;
+        }
+    }
 };
 
 /*
@@ -187,8 +205,8 @@ Game.Map.prototype.getRandomFloorPosition = function() {
 Game.Map.prototype.dig = function(x, y) {
     // If the tile is diggable, update it to a floor
     // TODO: update for different tilesets
-    if (this.getTile(x, y).isDiggable) {
-        this.grid[x][y] = Game.Tile.floorTile;
+    if (this.getTile(x, y).isBreakable) {
+        this.grid[x][y] = this.tileset.floor;
     }
 };
 

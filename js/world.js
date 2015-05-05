@@ -15,7 +15,7 @@
 // Other Areas will be generated only when they are first visited.
 Game.World = function(options) {
     options = options || {};
-    var mapSize = options.mapSize || 256;
+    var mapSize = options.mapSize || 128;
     mapSize = nearestPowerOf2(mapSize);
 
     this.mapSize = mapSize;
@@ -34,33 +34,63 @@ Game.World = function(options) {
                                     biome: "WORLD",
                                     map: worldMap });
 
+    var numTowns = randomNormalInt(mapSize / 10, mapSize / 50);
+    this.placeTowns(numTowns);
 
 
     this.currentArea = this.overWorld;
 
-    this.placeTowns(15);
+
 
     //this.findContinents();
+
+};
+
+Game.World.prototype.getRandomLandLocation = function() {
+    var exceptedBiomes = ["POLAR_ICECAP", "GLACIER", "DEEP_WATER", "SHALLOW_WATER"];
+
+    var rejected = [];
+
+    var x, y, biome, keepLooking;
+    do {
+        x = randomInt(0, this.mapSize - 1);
+        y = randomInt(0, this.mapSize - 1);
+
+        biome = this.getBiomeName(x, y);
+        if (exceptedBiomes.indexOf(biome) > -1) {
+            keepLooking = true;
+        } else {
+            return {x: x, y: y, biome: biome};
+        }
+
+    } while (keepLooking);
 
 };
 
 Game.World.prototype.addArea = function(options) {
     options = options || {};
 
+    options.width = options['width'] || 64;
+    options.height = options['height'] || 64;
+
     // options should pass in a biome type
     // use this to get a generator and a tileset for the area
     // (if needed)
-
     if (!options.map) {
-        // call to generateArea() or similar to get a map
-        var tiles;        // = generator(size, tileset)
-        options.map = new Game.Map(tiles);
+        var biome = options['biome'];
+        var biomeArea = Game.BiomeArea[biome];
+        var tileset = options['tileset'] || biomeArea.tileset;
+        var builder = options['builder'] || biomeArea.builder;
+
+        var tiles = builder(options.width, options.height, tileset);
+        options.map = new Game.Map(tiles, tileset);
     }
-    // set option as to whether the area map should
-    // wrap or not:
+
+    // set option as to whether the area map should wrap or not:
     // if biome is "WORLD" (i.e., the overworld map), then yes
     // otherwise, no
     var wrapMap = (options.biome === "WORLD");
+
 
     options.world = this;
     options.id = this.areas.length;
@@ -73,20 +103,16 @@ Game.World.prototype.addArea = function(options) {
     return area;
 };
 
-Game.World.prototype.findGoodTownLocations = function() {
-    var biomesArray = getKeysSortedByValue(Game.BiomeTypes.biomes);
+Game.World.prototype.findGoodTownLocations = function(amount) {
 
     var favoredBiomes = ["COLD_BEACH", "BEACH", "TAIGA", "RAINFOREST", "DECIDUOUS",
-                         "SHRUBLAND", "GRASSLAND", "JUNGLE", "SAVANNA"];
+                         "SHRUBLAND", "GRASSLAND", "SAVANNA"];
 
-    var disfavoredBiomes = ["WORLD", "POLAR_ICECAP", "GLACIER", "DEEP_WATER", "SHALLOW_WATER",
-                          "SNOWCAP", "BADLANDS", "CRAG", "MARSHLAND", "SWAMP",
-                          "TUNDRA", "COLD_BARRENS", "COLD_DESERT", "DUSTBOWL", "DESERT"];
+    var okBiomes = ["COLD_SCRUB", "SCRUB", "JUNGLE", "ALPINE"];
 
-    var neverBiomes = ["WORLD", "GLACIER", "DEEP_WATER", "SHALLOW_WATER"];
-
-    var okBiomes = arrayDiff(biomesArray, disfavoredBiomes);
-    var desperateBiomes = arrayDiff(biomesArray, neverBiomes);
+    var harshBiomes = ["COLD_DESERT", "DUSTBOWL", "DESERT", "COLD_BARRENS", "CRAG",
+                           "BADLANDS", "MARSHLAND", "SWAMP", "TUNDRA", "POLAR_ICECAP",
+                           "SNOWCAP"];
 
     var cellBiome;
 
@@ -102,8 +128,8 @@ Game.World.prototype.findGoodTownLocations = function() {
         }
     }
 
-    // if we didn't find any tiles in the best biomes, try the "ok" ones
-    if (goodLocs.length < 1) {
+    // if we didn't find enough tiles in the best biomes, try the "ok" ones
+    if (goodLocs.length < amount) {
         for (x = 0; x < this.mapSize; x++) {
             for (y = 0; y < this.mapSize; y++) {
                 cellBiome = this.getBiomeName(x, y);
@@ -114,13 +140,13 @@ Game.World.prototype.findGoodTownLocations = function() {
         }
     }
 
-    // if we still didn't find any, then our world is a harsh one,
-    // and we need to search the "desperate" biomes array
-    if (goodLocs.length < 1) {
+    // if we still didn't find enough, then our world is a harsh one,
+    // and we need to search the harsh biomes array
+    if (goodLocs.length < amount) {
         for (x = 0; x < this.mapSize; x++) {
             for (y = 0; y < this.mapSize; y++) {
                 cellBiome = this.getBiomeName(x, y);
-                if (desperateBiomes.indexOf(cellBiome) !== -1) {
+                if (harshBiomes.indexOf(cellBiome) !== -1) {
                     goodLocs.push({x:x, y:y});
                 }
             }
@@ -134,12 +160,12 @@ Game.World.prototype.findGoodTownLocations = function() {
 };
 
 Game.World.prototype.placeTowns = function(amount) {
-    var goodLocs = this.findGoodTownLocations();
+    var goodLocs = this.findGoodTownLocations(amount);
     var map = this.overWorld.map.grid;
     var townLoc;
     for (var i = 0; i < amount; i++) {
-        townLoc = goodLocs.random();
-        map[townLoc.x][townLoc.y] = Game.WorldTilesRepo.create("TOWN");
+        townLoc = randomSplice(goodLocs);
+        map[townLoc.x][townLoc.y] = Game.Tilesets.worldMap.TOWN;
     }
 };
 
@@ -164,8 +190,8 @@ Game.World.prototype.generateWorldMap = function(mapSize) {
                 if ((data & biomeValues[k]) === data) {
                     // get the corresponding key from biomeKeys[k]
                     biome = biomeKeys[k];
-                    // get the appropriate tile from Tiles[key]
-                    tile = Game.WorldTilesRepo.create(biome);
+                    // get the appropriate tile from tileset
+                    tile = Game.Tilesets.worldMap[biome];
                     // set worldMap[x][y] = tile
                     tiles[x][y] = tile;
                 }
@@ -173,7 +199,7 @@ Game.World.prototype.generateWorldMap = function(mapSize) {
         }
     }
 
-    var worldMap = new Game.Map(tiles);
+    var worldMap = new Game.Map(tiles, Game.Tilesets.worldMap);
     return worldMap;
 
 };

@@ -190,5 +190,5 @@ Game.Templates.Items = {
 
 };
 
-Game.ItemRepository = new Game.Repository('items', Game.Item, Game.Templates.Items);
+Game.ItemRepository = new Game.Factory('items', Game.Item, Game.Templates.Items);
 

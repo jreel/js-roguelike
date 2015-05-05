@@ -84,6 +84,16 @@ Array.prototype.swap = Array.prototype.swap || function(firstIndex, secondIndex)
     this[secondIndex] = temp;
 };
 
+// splice a random element out of an array
+// (useful for picking several randoms "without replacement")
+// https://www.developphp.com/video/JavaScript/Get-or-Remove-Random-Array-Elements-Tutorial
+function randomSplice(array) {
+    var len = array.length;
+    var ri = randomInt(0, len - 1);
+    var item = array.splice(ri, 1);
+    return item[0];
+}
+
 // subtract array2 from array1
 // http://stackoverflow.com/questions/1187518/javascript-array-difference
 function arrayDiff(arr1, arr2) {

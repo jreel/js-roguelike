@@ -114,7 +114,7 @@ Game.Screen.playScreen = {
         // re-set in case we just exited a subscreen
         display.setOptions({
             width: Game.screenWidth,
-            fontSize: 14,
+            fontSize: 12,
             //fontFamily: "Segoe UI Symbol",
             //forceSquareRatio: true
             spacing: 0.9

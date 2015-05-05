@@ -53,9 +53,11 @@ Game.Mixins.movable = {
                 return false;
             }
         } else if (tile.isWalkable) {
-            // if the tile is unoccupied,
-            // first check if this is a special tile
-            // and display message if so
+            // check if we can simply walk there
+            // and if so, update our position
+            this.setPosition(x, y);
+
+            // for the player, send messages about the tile if needed
             if (this === Game.player) {
                 // TODO: re-write this whole bloody thing
                 // TODO: support for different tilesets
@@ -70,9 +72,7 @@ Game.Mixins.movable = {
                     Game.sendMessage('danger', this, "There is a dark, seemingly bottomless hole here. Press [Space] to jump in!");
                 }
                 */
-                // check if we can simply walk there
-                // and if so, update our position
-                this.setPosition(x, y);
+
                 // if there are items here, let the player know
                 var items = area.getItemsAt(x, y);
                 if (items) {
@@ -82,20 +82,13 @@ Game.Mixins.movable = {
                         Game.sendMessage('info', this, "You see a small pile of things here.");
                     }
                 }
-                return true;
-            } else if (tile.canSpawnHere) {
-                this.setPosition(x, y);
-                return true;
-            } else {
-                // this is not a player,
-                // and the tile is set for mobs to not be here
-                // (for instance, stairs... mobs randomly moving onto
-                // stairs may prevent player from accessing them.
-                return false;
             }
-        } else if (tile.isDiggable && this === Game.player) {
+
+            return true;
+
+        } else if (tile.isBreakable && this === Game.player) {
             // if the tile isn't walkable,
-            // check if it's diggable
+            // check if it's breakable
             //TODO: tools, penalties for digging?
             area.map.dig(x, y);
             return true;

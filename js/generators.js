@@ -23,7 +23,11 @@ Game.Generators = {};
 
 // TODO: change all of these to accept a tileset parameter;
 // also need to change tile.js
-Game.Generators.generateCave = function(width, height) {
+Game.Generators.generateCave = function(width, height, tileset) {
+    if (!tileset) {
+        tileset = Game.Tilesets.cave;
+    }
+
     // create the empty map based on parameters
     var grid = new Array(width);
     for (var w = 0; w < width; w++) {
@@ -41,10 +45,10 @@ Game.Generators.generateCave = function(width, height) {
     // smooth the map one last time and then update
     generator.create(function(x, y, v) {
         if (v === 0) {
-            grid[x][y] = Game.Tile.floorTile;
+            grid[x][y] = tileset.floor;
         }
         else {
-            grid[x][y] = Game.Tile.wallTile;
+            grid[x][y] = tileset.wall;
         }
     });
 
@@ -69,39 +73,45 @@ Game.Generators.generateCave = function(width, height) {
 
 
 
-Game.Generators.generateCavernMap = function(width, height) {
+Game.Generators.generateCavernMap = function(width, height, tileset) {
+    if (!tileset) {
+        tileset = Game.Tilesets.cave;
+    }
+
     // first create an array filled with empty tiles
     var grid = new Array(width);
     for (var x = 0; x < width; x++) {
         grid[x] = new Array(height);
         for (var y = 0; y < height; y++) {
-            grid[x][y] = Game.Tile.wallTile;
+            grid[x][y] = tileset.wall;
         }
     }
     // now we determine the radius of the cavern to carve out
     var radius = (Math.min(width, height) - 2) / 2;
-    Game.Geometry.fillCircle(grid, width / 2, height / 2, radius, Game.Tile.floorTile);
+    Game.Geometry.fillCircle(grid, width / 2, height / 2, radius, tileset.floor);
 
     // randomly position lakes (3 - 6 lakes)
-    var lakes = randomInt(3, 6);
-    var maxRadius = 2;
-    for (var i = 0; i < lakes; i++) {
-        // random position, taking into consideration the radius to make sure
-        // we are within the bounds
-        var centerX = Math.floor(Math.random() * (width - (maxRadius * 2)));
-        var centerY = Math.floor(Math.random() * (height - (maxRadius * 2)));
-        centerX += maxRadius;
-        centerY += maxRadius;
-        // random radius
-        radius = Math.floor(Math.random() * maxRadius) + 1;
-        // position the lake
-        Game.Geometry.fillCircle(grid, centerX, centerY, radius, Game.Tile.waterTile);
+    if (tileset.water) {
+        var lakes = randomInt(3, 6);
+        var maxRadius = 2;
+        for (var i = 0; i < lakes; i++) {
+            // random position, taking into consideration the radius to make sure
+            // we are within the bounds
+            var centerX = Math.floor(Math.random() * (width - (maxRadius * 2)));
+            var centerY = Math.floor(Math.random() * (height - (maxRadius * 2)));
+            centerX += maxRadius;
+            centerY += maxRadius;
+            // random radius
+            radius = Math.floor(Math.random() * maxRadius) + 1;
+            // position the lake
+            Game.Geometry.fillCircle(grid, centerX, centerY, radius, tileset.water);
+        }
     }
     return grid;
 };
 
 
-Game.Generators.generateTowerMap = function(width, height) {
+Game.Generators.generateTower = function(width, height, tileset) {
     /*
      1. create the circular tower "mask"
      a. first, fill the mask array with null tiles
@@ -116,6 +126,10 @@ Game.Generators.generateTowerMap = function(width, height) {
      a. any floorTile in the mask becomes whatever dungeon tile
      */
 
+    if (!tileset) {
+        tileset = Game.Tilesets.cave;
+    }
+
     // first create the base array filled with empty tiles
     var tower = new Array(width);
     for (var x = 0; x < width; x++) {
@@ -126,20 +140,20 @@ Game.Generators.generateTowerMap = function(width, height) {
     }
     // now we determine the radius of the circle to carve out
     var radius = ((Math.min(width, height) - 2) / 2) - 1;
-    Game.Geometry.fillCircle(tower, (width / 2), (height / 2), radius, Game.Tile.floorTile);
+    Game.Geometry.fillCircle(tower, (width / 2), (height / 2), radius, tileset.floor);
 
     // loop through base array, check for floor tile with adjacent null tile
     // this should be the circumference of the circle; flip those tiles to wall tiles
     for (var x = 0; x < width; x++) {
         for (var y = 0; y < height; y++) {
-            if (tower[x][y] === Game.Tile.floorTile) {
+            if (tower[x][y] === tileset.floor) {
                 var neighbors = Game.Map.prototype.getNeighborTiles.call(this, x, y);
                 for (var i = 0; i < neighbors.length; i++) {
                     var nbor = neighbors[i];
                     if (nbor.x >= 0 && nbor.x < width && nbor.y >= 0 && nbor.y < height) {
                         var testCell = tower[nbor.x][nbor.y];
                         if (testCell === Game.Tile.nullTile) {
-                            tower[x][y] = Game.Tile.wallTile;
+                            tower[x][y] = tileset.wall;
                             break;
                         }
                     }
@@ -148,8 +162,8 @@ Game.Generators.generateTowerMap = function(width, height) {
         }
     }
 
-   // now create the rectangular random dungeon with same width/height
-    var dungeon = new Game.Dungeon.BSP(width, height, {
+   // now create the rectangular random dungeon with same width/height and tileset
+    var dungeon = new Game.Dungeon.BSP(width, height, tileset, {
         minRoomSize: randomInt(4, 6),
         splitConstraint: 0.45,
         maxIterations: randomInt(6, 8),
@@ -163,7 +177,7 @@ Game.Generators.generateTowerMap = function(width, height) {
     // loop through mask; switch any floor tile to corresponding tile in dungeon array
     for (var x = 0; x < width; x++) {
         for (var y = 0; y < height; y++) {
-            if (tower[x][y] === Game.Tile.floorTile) {
+            if (tower[x][y] === tileset.floor) {
                 tower[x][y] = dungeonGrid[x][y];
             }
         }
@@ -173,26 +187,26 @@ Game.Generators.generateTowerMap = function(width, height) {
     // loop through array, checking for floor tiles without at least 3 adjacent floor tiles
     // and flip them to wall tiles
     for (i = 0; i < 3; i++) {
-        tower = Game.Generators.cleanSingles(tower);
+        tower = Game.Generators.cleanSingles(tower, tileset);
     }
 
     return tower;
 };
 
-Game.Generators.cleanSingles = function(grid) {
-    // loop thru grid, removing any 1x1 floorTile areas
+Game.Generators.cleanSingles = function(grid, tileset) {
+    // loop thru grid, removing any 1x1 floor areas
     var width = grid.length;
     var height = grid[0].length;
     for (var x = 0; x < width; x++) {
         for (var y = 0; y < height; y++) {
-            if (grid[x][y] === Game.Tile.floorTile) {
+            if (grid[x][y] === tileset.floor) {
                 var neighbors = Game.Map.prototype.getNeighborTiles.call(this, x, y);
                 var okCount = 0;
                 for (var i = 0; i < neighbors.length; i++) {
                     var nbor = neighbors[i];
                     if (nbor.x >= 0 && nbor.x < width && nbor.y >= 0 && nbor.y < height) {
                         var testCell = grid[nbor.x][nbor.y];
-                        if (testCell === Game.Tile.floorTile) {
+                        if (testCell === tileset.floor) {
                             okCount++;
                         }
                     }
@@ -200,7 +214,7 @@ Game.Generators.cleanSingles = function(grid) {
                 // after looping through the neighbors and adding floorTiles to the count,
                 // check the count
                 if (okCount < 3) {
-                    grid[x][y] = Game.Tile.wallTile;
+                    grid[x][y] = tileset.wall;
                 }
             }
         }

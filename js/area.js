@@ -13,6 +13,8 @@ Game.Area = function (params) {
         width: Game.screenWidth * 2,
         height: Game.screenHeight * 2,
         world: null,
+        worldX: 0,
+        worldY: 0,
         biome: null,                         //  TODO: type of area/map
         map: null,                           // holds Game.Map object
         fov: null,
@@ -84,7 +86,7 @@ Game.Area.prototype.setupFov = function() {
     // TODO: variable fov based on area type - is this needed here?
     var area = this;
     area.fov = new ROT.FOV.RecursiveShadowcasting(function (x, y) {
-        return (area.map.getTile(x, y).isTransparent);
+        return (area.map.getTile(x, y).passesLight);
     });
 };
 

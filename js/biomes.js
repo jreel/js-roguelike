@@ -134,12 +134,149 @@ Game.BiomeTypes = {
     }
 }.init();
 
-/*
-    usage:
 
-    var Tile should have three bits set, corresponding to one each of ELEVATION, LATITUDE, and PRECIPITATION
-    To check if a Tile is one of the above-defined biomes, use:
+// hashtable for area construction within a given biome
+// relates each world biome type to a tileset and a map generator function
+// these could also include encounter or item tables
 
-    ( Tile & Game.BiomeTypes.biomes[i] ) === Tile
+// TODO: make correct tilesets and generators for each of these
+Game.BiomeArea = {
 
- */
+    POLAR_ICECAP: {
+        tileset: Game.Tilesets.iceCave,
+        builder: Game.Generators.generateCave
+    },
+
+    GLACIER: {
+        tileset: Game.Tilesets.iceCave,
+        builder: Game.Generators.generateCave
+    },
+
+    DEEP_WATER: {
+        tileset: Game.Tilesets.iceCave,
+        builder: Game.Generators.generateCave
+    },
+
+    SHALLOW_WATER: {
+        tileset: Game.Tilesets.iceCave,
+        builder: Game.Generators.generateCave
+    },
+
+    SNOWCAP: {
+        tileset: Game.Tilesets.iceCave,
+        builder: Game.Generators.generateCave
+    },
+
+    ALPINE: {
+        tileset: Game.Tilesets.cave,
+        builder: Game.Generators.generateCave
+    },
+
+    BADLANDS: {
+        tileset: Game.Tilesets.cave,
+        builder: Game.Generators.generateCave
+    },
+
+    CRAG: {
+        tileset: Game.Tilesets.cave,
+        builder: Game.Generators.generateCave
+    },
+
+    COLD_BEACH: {
+        tileset: Game.Tilesets.cave,
+        builder: Game.Generators.generateCave
+    },
+
+    BEACH: {
+        tileset: Game.Tilesets.cave,
+        builder: Game.Generators.generateCave
+    },
+
+    MARSHLAND: {
+        tileset: Game.Tilesets.forest,
+        builder: Game.Generators.generateCave
+    },
+
+    SWAMP: {
+        tileset: Game.Tilesets.forest,
+        builder: Game.Generators.generateCave
+    },
+
+    TUNDRA: {
+        tileset: Game.Tilesets.iceCave,
+        builder: Game.Generators.generateCave
+    },
+
+    COLD_BARRENS: {
+        tileset: Game.Tilesets.iceCave,
+        builder: Game.Generators.generateCave
+    },
+
+    TAIGA: {
+        tileset: Game.Tilesets.forest,
+        builder: Game.Generators.generateCave
+    },
+
+    COLD_SCRUB: {
+        tileset: Game.Tilesets.iceCave,
+        builder: Game.Generators.generateCave
+    },
+
+    COLD_DESERT: {
+        tileset: Game.Tilesets.iceCave,
+        builder: Game.Generators.generateCave
+    },
+
+    RAINFOREST: {
+        tileset: Game.Tilesets.forest,
+        builder: Game.Generators.generateCave
+    },
+
+    DECIDUOUS: {
+        tileset: Game.Tilesets.forest,
+        builder: Game.Generators.generateCave
+    },
+
+    SHRUBLAND: {
+        tileset: Game.Tilesets.forest,
+        builder: Game.Generators.generateCave
+    },
+
+    GRASSLAND: {
+        tileset: Game.Tilesets.cave,
+        builder: Game.Generators.generateCave
+    },
+
+    DUSTBOWL: {
+        tileset: Game.Tilesets.cave,
+        builder: Game.Generators.generateCave
+    },
+
+    SCRUB: {
+        tileset: Game.Tilesets.cave,
+        builder: Game.Generators.generateCave
+    },
+
+    DESERT: {
+        tileset: Game.Tilesets.cave,
+        builder: Game.Generators.generateCave
+    },
+
+    JUNGLE: {
+        tileset: Game.Tilesets.forest,
+        builder: Game.Generators.generateCave
+    },
+
+    SAVANNA: {
+        tileset: Game.Tilesets.forest,
+        builder: Game.Generators.generateCave
+    },
+
+    TOWN: {
+        tileset: Game.Tilesets.tower,
+        builder: Game.Generators.generateCave
+    }
+
+
+
+};

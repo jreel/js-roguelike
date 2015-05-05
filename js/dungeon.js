@@ -31,8 +31,14 @@ from http://www.roguebasin.com/index.php?title=Basic_BSP_Dungeon_generation
      or until possibly other conditions are met (such as max iterations for instance)
  */
 
-Game.Dungeon.BSP = function(width, height, options) {
+Game.Dungeon.BSP = function(width, height, tileset, options) {
     options = options || {};
+
+    if (!tileset) {
+        tileset = Game.Tilesets.cave;
+    }
+    this.tileset = tileset;
+
     this.minRoomSize = options['minRoomSize'] || 3;
     this.minRoomWidth = options['minRoomWidth'] || this.minRoomSize;
     this.minRoomHeight = options['minRoomHeight'] || this.minRoomSize;
@@ -350,7 +356,7 @@ Game.Dungeon.BSP.prototype.createGridArray = function(arrayToUse) {
     for (var x = 0; x < this.masterWidth; x++) {
         grid[x] = new Array(this.masterHeight);
         for (var y = 0; y < this.masterHeight; y++) {
-            grid[x][y] = Game.Tile.wallTile;
+            grid[x][y] = this.tileset.wall;
         }
     }
 
@@ -359,7 +365,7 @@ Game.Dungeon.BSP.prototype.createGridArray = function(arrayToUse) {
         // for each room/partition in chosen array, loop through the tiles
         for (var pX = arrayToUse[p].topLeftX; pX <= arrayToUse[p].bottomRightX; pX++) {
             for (var pY = arrayToUse[p].topLeftY; pY <= arrayToUse[p].bottomRightY; pY++) {
-                grid[pX][pY] = Game.Tile.floorTile;
+                grid[pX][pY] = this.tileset.floor;
             }
         }
     }
@@ -370,7 +376,7 @@ Game.Dungeon.BSP.prototype.createGridArray = function(arrayToUse) {
         // loop through corridors array
         for (var c = 0; c < this.corridors.length; c++) {
             var corr = this.corridors[c];
-            grid[corr.x][corr.y] = Game.Tile.corridorTile;
+            grid[corr.x][corr.y] = this.tileset.corridor;
         }
     }
 
@@ -389,19 +395,19 @@ Game.Dungeon.BSP.prototype.consoleOut = function(grid) {
         for (var x = 0; x < grid.length; x++) {
             if (grid[x][y] === Game.Tile.nullTile) {
                 gridOut += "█";
-            } else if (grid[x][y] === Game.Tile.floorTile) {
+            } else if (grid[x][y] === this.tileset.floor) {
                 //gridOut += "░";
                 var roomNumber = this.isWithinRoom(x, y);
                 if (roomNumber > -1) {
                     gridOut += '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'.charAt(roomNumber);
                 } else {
-                    gridOut += "░";
+                    gridOut += this.tileset.floor.character;
                 }
 
-            } else if (grid[x][y] === Game.Tile.wallTile) {
-                gridOut += "▓";
-            } else if (grid[x][y] === Game.Tile.corridorTile) {
-                gridOut += "▒";
+            } else if (grid[x][y] === this.tileset.wall) {
+                gridOut += this.tileset.wall.character;
+            } else if (grid[x][y] === this.tileset.corridor) {
+                gridOut += this.tileset.corridor.character;
             }
         }
         gridOut += "\n\r";
@@ -677,10 +683,11 @@ Game.Dungeon.BSP.prototype.getPerimeters = function(room, dir) {
     // store the perimeter tiles for each direction
     var perimeters = [];        // array of objects: {x, y, dir}
 
+    var pX, pY;
     // north heading: Y doesn't change; loop through X
     // make sure Y is within bounds before starting.
     if (room.topLeftY > 0 && (dir === 0 || checkAll)) {
-        for (var pX = room.topLeftX; pX <= room.bottomRightX; pX++) {
+        for (pX = room.topLeftX; pX <= room.bottomRightX; pX++) {
             // make sure X is within bounds before storing.
             if (pX >= 0 && pX < mapWidth) {
                 perimeters.push({ x: pX, y: room.topLeftY - 1, dir: 0 });
@@ -690,7 +697,7 @@ Game.Dungeon.BSP.prototype.getPerimeters = function(room, dir) {
     // east heading: X doesn't change; loop through Y
     // make sure X is within bounds before starting.
     if (room.bottomRightX < mapWidth - 1 && (dir === 1 || checkAll)) {
-        for (var pY = room.topLeftY; pY <= room.bottomRightY; pY++) {
+        for (pY = room.topLeftY; pY <= room.bottomRightY; pY++) {
             // make sure Y is within bounds before storing.
             if (pY >= 0 && pY < mapHeight) {
                 perimeters.push({ x: room.bottomRightX + 1, y: pY, dir: 1 });
@@ -700,7 +707,7 @@ Game.Dungeon.BSP.prototype.getPerimeters = function(room, dir) {
     // south heading: Y doesn't change; loop through X
     // make sure Y is within bounds before starting.
     if (room.bottomRightY < mapHeight - 1 && (dir === 2 || checkAll)) {
-        for (var pX = room.topLeftX; pX <= room.bottomRightX; pX++) {
+        for (pX = room.topLeftX; pX <= room.bottomRightX; pX++) {
             // make sure X is within bounds before storing.
             if (pX >= 0 && pX < mapWidth) {
                 perimeters.push({ x: pX, y: room.bottomRightY + 1, dir: 2 });
@@ -710,7 +717,7 @@ Game.Dungeon.BSP.prototype.getPerimeters = function(room, dir) {
     // west heading: X doesn't change; loop through Y
     // make sure X is within bounds before starting.
     if (room.topLeftX > 0 && (dir === 3 || checkAll)) {
-        for (var pY = room.topLeftY; pY <= room.bottomRightY; pY++) {
+        for (pY = room.topLeftY; pY <= room.bottomRightY; pY++) {
             // make sure Y is within bounds before storing.
             if (pY >= 0 && pY < mapHeight) {
                 perimeters.push({ x: room.topLeftX - 1, y: pY, dir: 3 });
@@ -729,25 +736,62 @@ Game.Dungeon.BSP.prototype.getPerimeters = function(room, dir) {
     http://www.roguebasin.com/index.php?title=C%2B%2B_Example_of_Dungeon-Building_Algorithm
  */
 
-Game.Dungeon.FeatureBased = function(map, options) {
-    this.map = map || new Game.Map([]);
-
-    this.mapWidth = width || 100;
-    this.mapHeight = height || 100;
+Game.Dungeon.FeatureBased = function(map, tileset, options) {
     options = options || {};
+    this.mapWidth = options['width'] || 100;
+    this.mapHeight = options['height'] || 100;
+
+    if (!map) {
+        var grid = new Array(this.mapWidth);
+        for (var i = 0; i < this.mapWidth; i++) {
+            grid[i] = new Array(this.mapHeight);
+        }
+    }
+
+    if (!tileset) {
+        tileset = Game.Tilesets.cave;
+    }
+
+    this.map = map || new Game.Map(grid, tileset);
+    this.tileset = tileset;
+
     this.maxFeatures = options['maxFeatures'] || 100;
     this.roomChance = options['roomChance'] || 75;      // lower = more corridors
     this.corridorChance = options['corridorChance'] || (100 - this.roomChance);
 
+    this.maxRoomSize = options['maxRoomSize'] || 10;
+    this.maxRoomWidth = options['maxRoomWidth'] || this.maxRoomSize;
+    this.maxRoomHeight = options['maxRoomHeight'] || this.maxRoomSize;
+    this.maxCorridorLength = options['maxCorridorLength'] || 6;
 };
 
 Game.Dungeon.FeatureBased.prototype.generate = function() {
+    // make one room in the center of map to start off
+    this.makeRoom(this.mapWidth / 2, this.mapHeight / 2,
+                  this.maxRoomWidth, this.maxRoomHeight, randomInt(0, 3));
 
+    for (var f = 1; f < this.maxFeatures; f++) {
+
+        if (!this.tryExpansion()) {
+            console.log('Unable to place more features (placed ' + f + ').');
+            break;
+        }
+    }
+
+    if (!this.makeStairs(this.tileset.stairsUp)) {
+        console.log('Unable to place stairs up.');
+    }
+
+    if (!this.makeStairs(this.tileset.stairsDown)) {
+        console.log('Unable to place stairs down.')
+    }
+
+    return true;
 };
 
 Game.Dungeon.FeatureBased.prototype.makeCorridor = function(x, y, maxLength, dir) {
     // sanity checks
-    if (x < 0 || x >= this.mapWidth || y < 0 || y >= this.mapHeight) {
+    if (!this.map.checkX(x) || !this.map.checkY(y)) {
         return false;
     }
     if (maxLength <= 0 || maxLength > Math.max(this.mapWidth, this.mapHeight)) {
@@ -770,21 +814,163 @@ Game.Dungeon.FeatureBased.prototype.makeCorridor = function(x, y, maxLength, dir
         xStart = x - length;
     }
 
+    if (!this.map.checkX(xStart) || !this.map.checkX(xEnd) ||
+        !this.map.checkY(yStart) || !this.map.checkY(yEnd)) {
+        return false;
+    }
+
+    if (!this.map.isAreaTiled(xStart, yStart, xEnd, yEnd, Game.Tile.nullTile)) {
+        return false;
+    }
+
+    this.map.tileArea(xStart, yStart, xEnd, yEnd, this.tileset.corridor);
+    return true;
+};
+
+Game.Dungeon.FeatureBased.prototype.makeRoom = function(x, y, xMax, yMax, dir) {
+    // minimum room size of 5x5 tiles (3x3 for walking on, the rest is walls)
+    var xLength = randomInt(5, xMax);
+    var yLength = randomInt(5, yMax);
+
+    var xStart = x;
+    var yStart = y;
+
+    var xEnd = x;
+    var yEnd = y;
+
+    if (dir === 0 || dir === 'N' || dir === 'n') {
+        yStart = y - yLength;
+        xStart = x - xLength / 2;
+        xEnd = x + (xLength + 1) / 2;
+    } else if (dir === 1 || dir === 'E' || dir === 'e') {
+        yStart = y - yLength / 2;
+        yEnd = y + (yLength + 1) / 2;
+        xEnd = x + xLength;
+    } else if (dir === 2 || dir === 'S' || dir === 's') {
+        yEnd = y + yLength;
+        xStart = x - xLength / 2;
+        xEnd = x + (xLength + 1) / 2;
+    } else if (dir === 3 || dir === 'W' || dir === 'w') {
+        yStart = y - yLength / 2;
+        yEnd = y + (yLength + 1) / 2;
+        xStart = x - xLength;
+    }
+
+    if (!this.map.checkX(xStart) || !this.map.checkX(xEnd) ||
+        !this.map.checkY(yStart) || !this.map.checkY(yEnd)) {
+        return false;
+    }
+
+    if (!this.map.isAreaTiled(xStart, yStart, xEnd, yEnd, Game.Tile.nullTile)) {
+        return false;
+    }
+
+    this.map.tileArea(xStart, yStart, xEnd, yEnd, this.tileset.wall);
+    this.map.tileArea(xStart + 1, yStart + 1, xEnd - 1, yEnd - 1, this.tileset.floor);
+    return true;
+};
+
+Game.Dungeon.FeatureBased.prototype.makeFeature = function(x, y, xmod, ymod, dir) {
+    // choose what to build
+    var chance = randomPercent();
+
+    // TODO: this could be extended to pull other features from a chance table
+
+    if (chance < this.roomChance) {
+        if (this.makeRoom(x + xmod, y + ymod, this.maxRoomWidth, this.maxRoomHeight, dir)) {
+
+            this.map.grid[x][y] = this.tileset.closedDoor;
+            // remove wall adjacent to the door
+            this.map.grid[x + xmod][y + ymod] = this.tileset.floor;
+
+            return true;
+        }
+        return false;
+
+    } else {
+        if (this.makeCorridor(x + xmod, y + ymod, this.maxCorridorLength, dir)) {
+
+            this.map.grid[x][y] = this.tileset.closedDoor;
+            return true;
+        }
+        return false;
+    }
 
 };
 
-Game.Dungeon.FeatureBased.prototype.makeRoom = function() {
+Game.Dungeon.FeatureBased.prototype.tryExpansion = function() {
 
+    var map = this.map;
+    var maxTries = 1000;
+
+    var x, y;
+    for (var tries = 0; tries < maxTries; tries++) {
+        // Pick a random wall or corridor tile.
+        // Make sure it has no adjacent doors (looks weird to have doors next to each other)
+        // Find a direction from which it's reachable.
+        // Attempt to make a feature (room or corridor) starting at this point.
+
+        x = randomInt(1, this.mapWidth - 2);
+        y = randomInt(1, this.mapHeight - 2);
+
+        if (map.getTile(x, y) !== this.tileset.wall &&
+            map.getTile(x, y) !== this.tileset.corridor) {
+            continue;
+        }
+
+        if (map.isAdjacent(x, y, this.tileset.closedDoor)) {
+            continue;
+        }
+
+        if (map.getTile(x, y + 1) === this.tileset.floor ||
+            map.getTile(x, y + 1) === this.tileset.corridor) {
+            if (this.makeFeature(x, y, 0, -1, 'N')) {
+                    return true;
+                }
+        } else if (map.getTile(x - 1, y) === this.tileset.floor ||
+                   map.getTile(x - 1, y) === this.tileset.corridor) {
+            if (this.makeFeature(x, y, 1, 0, 'E')) {
+                return true;
+            }
+        } else if (map.getTile(x, y - 1) === this.tileset.floor ||
+                   map.getTile(x, y - 1) === this.tileset.corridor) {
+            if (this.makeFeature(x, y, 0, 1, 'S')) {
+                return true;
+            }
+        } else if (map.getTile(x + 1, y) === this.tileset.floor ||
+                   map.getTile(x + 1, y) === this.tileset.corridor) {
+            if (this.makeFeature(x, y, -1, 0, 'W')) {
+                return true;
+            }
+        }
+    }
+    return false;
 };
 
-Game.Dungeon.FeatureBased.prototype.makeFeature = function() {
+Game.Dungeon.FeatureBased.prototype.makeStairs = function(tile) {
 
+    var map = this.map;
+    var maxTries = 10000;
+
+    var x, y;
+    for (var tries = 0; tries < maxTries; tries++) {
+
+        x = randomInt(1, this.mapWidth - 2);
+        y = randomInt(1, this.mapHeight - 2);
+
+        if (!map.isAdjacent(x, y, this.tileset.floor) &&
+            !map.isAdjacent(x, y, this.tileset.corridor)) {
+            continue;
+        }
+
+        if (map.isAdjacent(x, y, this.tileset.closedDoor)) {
+            continue;
+        }
+
+        map.grid[x][y] = tile;
+        return true;
+    }
+    return false;
 };
 
-Game.Dungeon.FeatureBased.prototype.chooseFeature = function() {
 
-};
-
-Game.Dungeon.FeatureBased.prototype.makeStairs = function() {
-
-};
