@@ -48,10 +48,17 @@ Game.World.prototype.addArea = function(options) {
         var tiles;        // = generator(size, tileset)
         options.map = new Game.Map(tiles);
     }
+    // set option as to whether the area map should
+    // wrap or not:
+    // if biome is "WORLD" (i.e., the overworld map), then yes
+    // otherwise, no
+    var wrapMap = (options.biome === "WORLD");
+
     options.world = this;
     options.id = this.areas.length;
     var area = new Game.Area(options);
     area.map.area = area;
+    area.map.wrap = wrapMap;
     area.setupFov();
     this.areas.push(area);
 

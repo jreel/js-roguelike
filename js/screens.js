@@ -30,7 +30,7 @@ Game.Screen.startScreen = {
             height: logoSize.height + 10,
             fontSize: 12,
             forceSquareRatio: false,
-            spacing: 0.8,
+            spacing: 1,
             fg: '#ccc',
             bg: '#000'
         });
@@ -134,33 +134,31 @@ Game.Screen.playScreen = {
         var playerX = this.player.x;
         var playerY = this.player.y;
 
-        // Make sure the x-axis doesn't go to the left of the left bound
-        var topLeftX = Math.max(0, playerX - (screenWidth / 2));
-        // Make sure we still have enough space to fit an entire game screen
-        topLeftX = Math.min(topLeftX, mapWidth - screenWidth);
-
-        // Make sure the y-axis doesn't go above the top bound
-        var topLeftY = Math.max(0, playerY - (screenHeight / 2));
-        // Make sure we still have enough space to fit an entire game screen
-        topLeftY = Math.min(topLeftY, mapHeight - screenHeight);
-
         // Find all visible map cells based on FOV or previous visit
         // TODO: different FOV for different map types
         var visibleCells = {};
         var map = area.map;
+        var sightRadius = this.player.sightRadius;
         area.fov.compute(
-            playerX, playerY,
-            this.player.sightRadius,
+            playerX, playerY, sightRadius,
             function(x, y, radius, visibility) {
+                x = map.getWrapped(x);
                 visibleCells[x + "," + y] = true;
                 // mark cell as explored
                 map.setExplored(x, y, true);
             }
         );
 
-        // Render visible and explored map cells
-        for (var x = topLeftX; x < topLeftX + screenWidth; x++) {
-            for (var y = topLeftY; y < topLeftY + screenHeight; y++) {
+         // Render visible and explored map cells
+        //for (var x = topLeftX; x < topLeftX + screenWidth; x++) {
+            //for (var y = topLeftY; y < topLeftY + screenHeight; y++) {
+        var x, y, translated;
+        for (var sx = 0; sx < screenWidth; sx++) {
+            for (var sy = 0; sy < screenHeight; sy++) {
+
+                translated = this.getMapCoordinates(sx, sy);
+                x = translated.x;
+                y = translated.y;
                 if (map.isExplored(x, y)) {
                     // fetch the glyph for the tile and render it
                     // to the screen at the offset position
@@ -191,8 +189,8 @@ Game.Screen.playScreen = {
                         bg = glyph.darken().background;
                     }
                     display.draw(
-                        x - topLeftX,
-                        y - topLeftY,
+                        sx,
+                        sy,
                         glyph.character,
                         fg,
                         bg);
@@ -258,8 +256,58 @@ Game.Screen.playScreen = {
         }
     },
 
+    getMapCoordinates: function(screenX, screenY) {
+        // takes ScreenX, ScreenY coordinates and
+        // returns correct mapX, mapY coordinates
+        var playerX = Game.player.x;
+        var playerY = Game.player.y;
+        var area = Game.currentWorld.currentArea;
+        var mapWidth = area.map.width;
+        var mapHeight = area.map.height;
+        var screenWidth = Game.screenWidth;
+        var screenHeight = Game.screenHeight;
+
+        var mapLeftBound, mapTopBound, mapX, mapY;
+
+        // wrap the x-coordinates if needed
+        if (area.map.wrap) {
+            // find the left bound (screenX = 0) of the rendered map,
+            // based on player map position
+            mapLeftBound = playerX - (screenWidth / 2);
+            // adjust if needed
+            if (mapLeftBound < 0) {
+                mapLeftBound += mapWidth;
+            }
+            mapX = mapLeftBound + screenX;
+            if (mapX >= mapWidth) {
+                mapX %= mapWidth;
+            }
+        } else {
+            mapLeftBound = Math.max(0, playerX - (screenWidth / 2));
+            mapLeftBound = Math.min(mapLeftBound, mapWidth - screenWidth);
+            mapX = mapLeftBound + screenX;
+        }
+
+        // we don't wrap the y-coordinates in any case
+        mapTopBound = Math.max(0, playerY - (screenHeight / 2));
+        mapTopBound = Math.min(mapTopBound, mapHeight - screenHeight);
+        mapY = mapTopBound + screenY;
+
+        return {x: mapX, y: mapY};
+    },
+
     move: function(dX, dY) {
+        var area = Game.currentWorld.currentArea;
+        var mapWidth = area.map.width;
         var newX = this.player.x + dX;
+        // check if we need to wrap around
+        if (area.map.wrap) {
+            if (newX < 0) {
+                newX += mapWidth;
+            } else if (newX >= mapWidth) {
+                newX %= mapWidth
+            }
+        }
         var newY = this.player.y + dY;
         // Try to move to the new cell
         this.player.tryMove(newX, newY);
@@ -337,6 +385,7 @@ Game.Screen.statsLine = {
 
         var offset = 0;
 
+        /*
         // show current area
         // TODO: current area name?
         var areaLabel = '%c{#fff}%b{#000}Exploring: ';
@@ -345,6 +394,14 @@ Game.Screen.statsLine = {
         //currentArea += " (" + subBiome.toLowerCase() + ")";
         display.drawText(offset, 0, areaLabel + currentArea);
         offset += (ROT.Text.measure(areaLabel + currentArea).width + 3);
+        */
+
+        var coordinateLabel = '%c{#fff}%b{#000}Coords: ';
+        var xCoordinate = Game.player.x;
+        var yCoordinate = Game.player.y;
+        var coordinateOut = coordinateLabel + xCoordinate + ', ' + yCoordinate;
+        display.drawText(offset, 0, coordinateOut);
+        offset += (ROT.Text.measure(coordinateOut).width + 3);
 
         // show current hp
         var hpLabel = '%c{#fff}%b{#000}HP: ';
