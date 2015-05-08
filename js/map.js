@@ -12,18 +12,16 @@
     MAP: a grid (2D array) on which we place and manipulate tiles.
 */
 
-Game.Map = function(grid) {
+Game.Map = function(grid, tileset) {
     // TODO: update for different tilesets?
     this.grid = grid;
+    this.tileset = tileset;
     this.area = null;       // should be set by the Area that owns it
     this.wrap = false;      // should also be set by the Area that owns it
     // cache width and height based on the dimensions
     // of the grid array
     this.width = grid.length;
     this.height = grid[0].length;
-
-    // TODO: we may want to cache a default floor, wall, and bedrock tile
-    // based on the map tileset, so we can ref this.floorTile for ex.
 
     // setup array to store whether a tile has been explored
     // so that we can render it in the future
@@ -34,11 +32,12 @@ Game.Map = function(grid) {
             this.explored[x][y] = false;
         }
     }
+
 };
 
-Game.Map.prototype.getWrapped = function(x) {
+Game.Map.prototype.getWrappedX = function(x) {
     if (!this.wrap) {
-        return x;
+        x = this.getConstrainedX(x);
     }
     if (x < 0) {
         x += this.width;
@@ -47,13 +46,45 @@ Game.Map.prototype.getWrapped = function(x) {
     }
     return x;
 };
+Game.Map.prototype.getConstrainedX = function(x) {
+    if (x < 0) {
+        x = 0;
+    } else if (x >= this.width) {
+        x = this.width - 1;
+    }
+    return x;
+};
+Game.Map.prototype.getConstrainedY = function(y) {
+    if (y < 0) {
+        y = 0;
+    } else if (y >= this.height) {
+        y = this.height - 1;
+    }
+    return y;
+};
+
+Game.Map.prototype.detectMapEdge = function(x, y) {
+    var edges = {};
+
+    edges.W = (x === 0);
+    edges.E = (x === this.width - 1);
+    edges.N = (y === 0);
+    edges.S = (y === this.height - 1);
+
+    if (edges.W || edges.E || edges.N || edges.S) {
+        edges.any = true;
+    } else {
+        edges.any = false;
+    }
+    return edges;
+};
 
 // Gets the tile for a given coordinate
 Game.Map.prototype.getTile = function(x, y) {
     // if map should wrap, we should re-calculate the
     // correct (wrapped) x-coordinate
     if (this.wrap) {
-        x = this.getWrapped(x);
+        x = this.getWrappedX(x);
     }
 
     // Make sure we are inside bounds.
@@ -92,13 +123,36 @@ Game.Map.prototype.getNeighborTiles = function(x, y) {
     return tiles.randomize();
 };
 
+Game.Map.prototype.getTilesWithinRadius = function(centerX, centerY, radius) {
+    var results = [];
+    // Determine the bounds
+    var leftX = centerX - radius;
+    var rightX = centerX + radius;
+    var topY = centerY - radius;
+    var bottomY = centerY + radius;
+
+    for (var x = leftX; x <= rightX; x++) {
+        for (var y = topY; y <= bottomY; y++) {
+            if (x === centerX && y === centerX) {
+                continue;
+            }
+            results.push({x: x, y: y});
+        }
+    }
+    return results.randomize();
+};
+
 Game.Map.prototype.isAdjacent = function(x, y, tile) {
     return (this.getTile(x - 1, y) === tile || this.getTile(x + 1, y) === tile ||
             this.getTile(x, y - 1) === tile || this.getTile(x, y + 1) === tile);
 };
 
+// check whether a rectangular region is entirely tiled with 'tile'
+// (most useful for checking for an unused area (tile == nullTile) in
+//  dungeon-building routines)
 Game.Map.prototype.isAreaTiled = function(xStart, yStart, xEnd, yEnd, tile) {
-    if (!this.checkX(xStart) || !this.checkX(xEnd) || !this.checkY(yStart) || !this.checkY(yEnd)) {
+    if (!this.checkX(xStart) || !this.checkX(xEnd) ||
+        !this.checkY(yStart) || !this.checkY(yEnd)) {
         return false;
     }
     if ((xStart > xEnd) || (yStart > yEnd)) {
@@ -112,6 +166,74 @@ Game.Map.prototype.isAreaTiled = function(xStart, yStart, xEnd, yEnd, tile) {
         }
     }
     return true;
+};
+
+Game.Map.prototype.tileArea = function(xStart, yStart, xEnd, yEnd, tile) {
+    if (!this.checkX(xStart) || !this.checkX(xEnd) ||
+        !this.checkY(yStart) || !this.checkY(yEnd)) {
+        return false;
+    }
+    if ((xStart > xEnd) || (yStart > yEnd)) {
+        return false;
+    }
+
+    for (var x = xStart; x <= xEnd; x++) {
+        for (var y = yStart; y <= yEnd; y++) {
+            this.grid[x][y] = tile;
+        }
+    }
+};
+
+/*
+Game.Map.prototype.floodFill = function(x, y, flagsArray, flag) {
+    if (this.getTile(x,y).isWalkable && !flagsArray[x][y]) {
+        flagsArray[x][y] = flag;
+    } else {
+        return;
+    }
+    this.floodFill(x + 1, y);
+    this.floodFill(x - 1, y);
+    this.floodFill(x, y + 1);
+    this.floodFill(x, y - 1);
+};
+*/
+
+Game.Map.prototype.fillRegion = function(region, x, y, masterArray) {
+
+    if (this.wrap) {
+        x = this.getWrappedX(x);
+    }
+
+    // update the region of the original tile
+    masterArray[x][y] = region;
+
+    // temporary array to loop through
+    var tiles = [{x:x, y:y}];
+    var tile;
+    var neighbors;
+
+    // keep looping while there are still tiles to process
+    while (tiles.length > 0) {
+        tile = tiles.pop();
+        neighbors = this.getNeighborTiles(tile.x, tile.y);
+        while (neighbors.length > 0) {
+            tile = neighbors.pop();
+            if (this.getTile(tile.x, tile.y).isWalkable) {
+
+                if (this.wrap) {
+                    tile.x = this.getWrappedX(tile.x);
+                }
+
+                if (masterArray[tile.x][tile.y] === 0) {
+
+                    masterArray[tile.x][tile.y] = region;
+                    tiles.push(tile);
+                }
+
+            }
+        }
+    }
+
 };
 
 Game.Map.prototype.isEmptyFloor = function(x, y) {
@@ -131,11 +253,10 @@ Game.Map.prototype.getRandomFloorPosition = function() {
 };
 
 // Map-changing abilities
-Game.Map.prototype.dig = function(x, y) {
-    // If the tile is diggable, update it to a floor
-    // TODO: update for different tilesets
-    if (this.getTile(x, y).isDiggable) {
-        this.grid[x][y] = Game.Tile.floorTile;
+Game.Map.prototype.breakTile = function(x, y) {
+    // If the tile is breakable, update it to a floor
+    if (this.getTile(x, y).isBreakable) {
+        this.grid[x][y] = this.tileset.floor;
     }
 };
 

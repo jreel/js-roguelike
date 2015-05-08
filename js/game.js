@@ -47,10 +47,10 @@ var Game = {
         this.displays.main = new ROT.Display({
                                         width: this.screenWidth,
                                         height: this.screenHeight,
-                                        fontSize: 14,
+                                        fontSize: 12,
                                         //fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
                                         forceSquareRatio: true,
-                                        spacing: 1
+                                        spacing: 0.9
                                         });
 
         this.displays.msg = new ROT.Display({
@@ -183,14 +183,26 @@ var Game = {
 
         // TODO: starting script
         var world = new Game.World();
+        world.worldId = Game.worlds.length;
         Game.worlds.push(world);
         Game.currentWorld = world;
 
+        // pick a new area in the world to start in
+        var startingLocation = world.getRandomLandLocation();
+        var startingArea = world.addArea({  biome: startingLocation.biome,
+                                            parentX: startingLocation.x,
+                                            parentY: startingLocation.y  });
+
+        world.currentArea = startingArea;
+
         // add player to world
-        world.currentArea.addEntityAtRandomPosition(this.player);
+        var x = startingArea.map.width / 2;
+        var y = startingArea.map.height / 2;
+
+        this.player.setLocation(x, y, startingArea);
 
         // Start the current area engine
-        world.currentArea.engine.start();
+        startingArea.engine.start();
 
     }
 };

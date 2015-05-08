@@ -72,9 +72,7 @@ Game.Screen.startScreen = {
 
 // Define our playing screen
 Game.Screen.playScreen = {
-    player: null,           // TODO: party system
     subScreen: null,        // TODO: move subScreens to separate display
-    area: null,
 
     enter: function(display) {
         // console.log("Entered play screen.");
@@ -96,8 +94,6 @@ Game.Screen.playScreen = {
         });
 
         Game.startNewGame();
-        this.player = Game.player;
-        this.area = Game.currentWorld.currentArea;
     },
 
     exit: function() {
@@ -114,7 +110,7 @@ Game.Screen.playScreen = {
         // re-set in case we just exited a subscreen
         display.setOptions({
             width: Game.screenWidth,
-            fontSize: 14,
+            fontSize: 12,
             //fontFamily: "Segoe UI Symbol",
             //forceSquareRatio: true
             spacing: 0.9
@@ -124,41 +120,44 @@ Game.Screen.playScreen = {
         var screenHeight = Game.screenHeight;
 
         var player = Game.player;
-        this.player = player;
-        var area = Game.currentWorld.currentArea;
-        this.area = area;
+        //var area = Game.currentWorld.currentArea;
+        var area = player.area;
 
         var mapWidth = area.width;
         var mapHeight = area.height;
 
-        var playerX = this.player.x;
-        var playerY = this.player.y;
+        var playerX = player.x;
+        var playerY = player.y;
 
         // Find all visible map cells based on FOV or previous visit
-        // TODO: different FOV for different map types
         var visibleCells = {};
         var map = area.map;
-        var sightRadius = this.player.sightRadius;
+        var sightRadius = player.sightRadius * area.sightRadiusMultiplier;
         area.fov.compute(
             playerX, playerY, sightRadius,
             function(x, y, radius, visibility) {
-                x = map.getWrapped(x);
+                x = map.getWrappedX(x);
                 visibleCells[x + "," + y] = true;
                 // mark cell as explored
                 map.setExplored(x, y, true);
             }
         );
 
-         // Render visible and explored map cells
-        //for (var x = topLeftX; x < topLeftX + screenWidth; x++) {
-            //for (var y = topLeftY; y < topLeftY + screenHeight; y++) {
-        var x, y, translated;
-        for (var sx = 0; sx < screenWidth; sx++) {
-            for (var sy = 0; sy < screenHeight; sy++) {
+        // calculate the map coordinates at the top left of the screen
+        // (based on centering the view on the player and
+        //  wrapping the map if needed)
+        var topLeft = this.getMapCoordinates(0, 0);
 
-                translated = this.getMapCoordinates(sx, sy);
-                x = translated.x;
-                y = translated.y;
+         // Render visible and explored map cells
+        var x, y, sx, sy;
+        for (sx = 0, x = topLeft.x; sx < screenWidth; sx++, x++) {
+            for (sy = 0, y = topLeft.y; sy < screenHeight; sy++, y++) {
+
+                // if our x has gone past the mapWidth, recalculate and reset
+                if (x >= mapWidth) {
+                    x = this.getMapCoordinates(sx, sy).x;
+                }
+
                 if (map.isExplored(x, y)) {
                     // fetch the glyph for the tile and render it
                     // to the screen at the offset position
@@ -215,7 +214,9 @@ Game.Screen.playScreen = {
             return;
         }
         if (inputType === 'keydown') {
-             var cmd = inputData.keyCode;
+            var cmd = inputData.keyCode;
+            var player = Game.player;
+            var area = Game.currentWorld.currentArea;
              // Movement
             if (cmd === ROT.VK_LEFT) {
                 this.move(-1, 0);
@@ -226,20 +227,20 @@ Game.Screen.playScreen = {
             } else if (cmd === ROT.VK_DOWN) {
                 this.move(0, 1);
             } else if (cmd === ROT.VK_I) {          // inventory screen
-                this.showItemsSubScreen(Game.Screen.inventoryScreen, this.player.inventory,
+                this.showItemsSubScreen(Game.Screen.inventoryScreen, player.inventory,
                                             "You are not carrying anything.");
                 return;
             } else if (cmd === ROT.VK_D) {          // drop screen
-                this.showItemsSubScreen(Game.Screen.dropScreen, this.player.inventory,
+                this.showItemsSubScreen(Game.Screen.dropScreen, player.inventory,
                                         "You have nothing to drop.");
                 return;
             } else if (cmd === ROT.VK_E) {      // eat screen
-                this.showItemsSubScreen(Game.Screen.eatScreen, this.player.inventory,
+                this.showItemsSubScreen(Game.Screen.eatScreen, player.inventory,
                                         "You have nothing to eat."
                 );
                 return;
             } else if (cmd === ROT.VK_W) {      // wear/wield screen
-                this.showItemsSubScreen(Game.Screen.equipScreen, this.player.inventory,
+                this.showItemsSubScreen(Game.Screen.equipScreen, player.inventory,
                                         "You have nothing to wear or wield."
                 );
                 return;
@@ -251,8 +252,8 @@ Game.Screen.playScreen = {
             }
             // Unlock the engine
             //this.player.trackers.turnsTaken++;
-            this.player.raiseEvent('onTurnTaken');
-            this.area.engine.unlock();
+            player.raiseEvent('onTurnTaken');
+            area.engine.unlock();
         }
     },
 
@@ -297,9 +298,10 @@ Game.Screen.playScreen = {
     },
 
     move: function(dX, dY) {
+        var player = Game.player;
         var area = Game.currentWorld.currentArea;
         var mapWidth = area.map.width;
-        var newX = this.player.x + dX;
+        var newX = player.x + dX;
         // check if we need to wrap around
         if (area.map.wrap) {
             if (newX < 0) {
@@ -308,25 +310,27 @@ Game.Screen.playScreen = {
                 newX %= mapWidth
             }
         }
-        var newY = this.player.y + dY;
+        var newY = player.y + dY;
         // Try to move to the new cell
-        this.player.tryMove(newX, newY);
+        player.tryMove(newX, newY);
     },
 
     activateTile: function() {
-        var x = this.player.x;
-        var y = this.player.y;
+        var player = Game.player;
+        var area = Game.currentWorld.currentArea;
+        var x = player.x;
+        var y = player.y;
 
         // check for items that player wants to pick up
-        var items = this.area.getItemsAt(x, y);
+        var items = area.getItemsAt(x, y);
         if (items) {
             if (items.length === 1) {
                 // if only one item, don't show a screen, just try to pick it up
                 var item = items[0];
-                if (this.player.pickupItems([0])) {
-                    Game.sendMessage('default', this.player, "You pick up %s", item.describeA() + ".");
+                if (player.pickupItems([0])) {
+                    Game.sendMessage('default', player, "You pick up %s", item.describeA() + ".");
                 } else {
-                    Game.sendMessage('warning', this.player, "Your inventory is full! Nothing was picked up.");
+                    Game.sendMessage('warning', player, "Your inventory is full! Nothing was picked up.");
                 }
             } else {
                 // show the pickup screen if there are > 1 item
@@ -336,19 +340,10 @@ Game.Screen.playScreen = {
         } else {
             // if no items, check for other functions
 
-            // TODO: implement changeArea(x, y) method
-            // check for special tile
-            /*
-            var tile = this.area.map.getTile(x, y);
-            // switch case depending on tile
-            if (tile === Game.Tile.prevLevelTile) {
-                Game.currentLevel.changeLevel(-1);
-            } else if (tile === Game.Tile.nextLevelTile) {
-                Game.currentLevel.changeLevel(1);
-            } else if (tile === Game.Tile.holeToCavernTile) {
-                Game.currentLevel.changeLevel(1);
+            // check for special tiles for area changes
+            if (player.changeAreas(x, y)) {
+                Game.refresh();
             }
-            */
         }
     },
 
@@ -360,10 +355,11 @@ Game.Screen.playScreen = {
     },
 
     showItemsSubScreen: function(subScreen, items, emptyMessage) {
-        if (items && subScreen.setup(this.player, items) > 0) {
+        var player = Game.player;
+        if (items && subScreen.setup(player, items) > 0) {
             this.setSubScreen(subScreen);
         } else {
-            Game.sendMessage('warning', this.player, emptyMessage);
+            Game.sendMessage('warning', player, emptyMessage);
             Game.refresh();
         }
     }
@@ -383,37 +379,37 @@ Game.Screen.statsLine = {
             return;
         }
 
+        var player = Game.player;
         var offset = 0;
 
-        /*
         // show current area
-        // TODO: current area name?
         var areaLabel = '%c{#fff}%b{#000}Exploring: ';
-        var currentArea = Game.currentWorld.currentArea.biome.toLowerCase();
+        var currentBiome = Game.currentWorld.currentArea.biome;
+        currentBiome = currentBiome.toLowerCase();
+        currentBiome = currentBiome.replace("_", " ");
         //var subBiome = Game.currentWorld.getBiomeName(Game.player.x, Game.player.y).toLowerCase();
         //currentArea += " (" + subBiome.toLowerCase() + ")";
-        display.drawText(offset, 0, areaLabel + currentArea);
-        offset += (ROT.Text.measure(areaLabel + currentArea).width + 3);
-        */
 
-        var coordinateLabel = '%c{#fff}%b{#000}Coords: ';
-        var xCoordinate = Game.player.x;
-        var yCoordinate = Game.player.y;
-        var coordinateOut = coordinateLabel + xCoordinate + ', ' + yCoordinate;
-        display.drawText(offset, 0, coordinateOut);
-        offset += (ROT.Text.measure(coordinateOut).width + 3);
+        var coordinateLabel = ' (';
+        var xCoordinate = player.x;
+        var yCoordinate = player.y;
+        coordinateLabel += xCoordinate + ', ' + yCoordinate + ')';
+
+        var areaOut = areaLabel + currentBiome + coordinateLabel;
+        display.drawText(offset, 0, areaOut);
+        offset += (ROT.Text.measure(areaOut).width + 3);
 
         // show current hp
         var hpLabel = '%c{#fff}%b{#000}HP: ';
-        var hpState = Game.player.getHpState();
+        var hpState = player.getHpState();
         display.drawText(offset, 0, hpLabel + hpState);
         offset += (ROT.Text.measure(hpLabel + hpState).width + 3);
 
         // show current weapon
         var weaponLabel = '%c{#fff}%b{#000}Wielding: ';
         var weaponName;
-        if (Game.player.weapon) {
-            weaponName = Game.player.weapon.name;
+        if (player.weapon) {
+            weaponName = player.weapon.name;
         } else {
             weaponName = 'nothing';
         }
@@ -423,8 +419,8 @@ Game.Screen.statsLine = {
         // show current armor
         var armorLabel = '%c{#fff}%b{#000}Wearing: ';
         var armorName;
-        if (Game.player.armor) {
-            armorName = Game.player.armor.name;
+        if (player.armor) {
+            armorName = player.armor.name;
         } else {
             armorName = 'nothing';
         }
@@ -432,7 +428,7 @@ Game.Screen.statsLine = {
         offset += (ROT.Text.measure(armorLabel + armorName).width + 3);
 
         // show current hunger state
-        var hungerState = Game.player.getHungerState();
+        var hungerState = player.getHungerState();
         display.drawText(offset, 0, hungerState);
 
     },
@@ -575,13 +571,15 @@ Game.Screen.winScreen = {
             display.drawText(2, i + 1, "%b{" + background + "}You win!");
         }
 
-        var trackers = Object.keys(Game.player.trackers);
+        var player = Game.player;
+
+        var trackers = Object.keys(player.trackers);
         for (var j = 0; j < trackers.length; j++) {
             var trackedStat = trackers[j];
-            Game.sendMessage('info', Game.player, trackedStat + ": " + Game.player.trackers[trackedStat]);
+            Game.sendMessage('info', player, trackedStat + ": " + player.trackers[trackedStat]);
         }
 
-        Game.sendMessage('warning', Game.player,
+        Game.sendMessage('warning', player,
                          "Press [Enter] to go back to the start screen if you would like to play again!"
         );
     },
@@ -632,6 +630,8 @@ Game.Screen.loseScreen = {
                 col++;
             }
         }
+
+        var player = Game.player;
 /*
         var trackers = Object.keys(Game.player.trackers);
         for (var j = 0; j < trackers.length; j++) {
@@ -639,7 +639,7 @@ Game.Screen.loseScreen = {
             //Game.sendMessage('info', Game.player, trackedStat + ": " + Game.player.trackers[trackedStat]);
         }
 */
-        //Game.sendMessage('warning', Game.player, "Press [Enter] to go back to the start screen if you want to try again!");
+        Game.sendMessage('warning', player, "Press [Enter] to go back to the start screen if you want to try again!");
     },
     handleInput: function(inputType, inputData) {
         // TODO: mouse input

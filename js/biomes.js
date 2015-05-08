@@ -90,7 +90,7 @@ Game.BiomeTypes = {
         // un-forested mountain areas
         this.biomes.SNOWCAP = this.elevation.SNOWCAP | this.ANY_COLD | this.ANY_PRECIPITATION;
         // alpine = above the treeline, but ground vegetation still possible
-        this.biomes.ALPINE = this.elevation.ALPINE | this.elevation.SNOWCAP | this.ANY_NONPOLAR | this.ANY_NONDRY;
+        this.biomes.MOUNTAIN = this.elevation.ALPINE | this.elevation.SNOWCAP | this.ANY_NONPOLAR | this.ANY_NONDRY;
         // mesas, plateaus, etc
         this.biomes.BADLANDS = this.elevation.ALPINE | this.elevation.SNOWCAP | this.ANY_HOT | this.ANY_DRY;
         // cold version of the above
@@ -105,17 +105,17 @@ Game.BiomeTypes = {
         // GROWTH_AREA = plains, hills, base of mountains
         // high latitude, low temperature
         this.biomes.TUNDRA = this.GROWTH_AREA | this.temperature.SUBARCTIC | this.ANY_NONDRY;
-        this.biomes.COLD_BARRENS = this.GROWTH_AREA | this.temperature.SUBARCTIC | this.ANY_DRY;
+        this.biomes.BARRENS = this.GROWTH_AREA | this.temperature.SUBARCTIC | this.ANY_DRY;
 
         // taiga = boreal forest (coniferous)
         this.biomes.TAIGA = this.GROWTH_AREA | this.temperature.BOREAL | this.ANY_NONDRY;
-        this.biomes.COLD_SCRUB = this.GROWTH_AREA | this.temperature.BOREAL | this.precipitation.SEMIARID;
+        this.biomes.COLD_SCRUBLAND = this.GROWTH_AREA | this.temperature.BOREAL | this.precipitation.SEMIARID;
         this.biomes.COLD_DESERT = this.GROWTH_AREA | this.temperature.BOREAL | this.precipitation.ARID;
 
         // temperate types
-        this.biomes.RAINFOREST =
+        this.biomes.CONIFEROUS_FOREST =
             this.GROWTH_AREA | this.temperature.TEMPERATE | this.temperature.SUBTROPICAL | this.precipitation.RAINY;
-        this.biomes.DECIDUOUS =
+        this.biomes.BROADLEAF_FOREST =
             this.GROWTH_AREA | this.temperature.TEMPERATE | this.temperature.SUBTROPICAL | this.precipitation.HUMID;
         this.biomes.SHRUBLAND =
             this.GROWTH_AREA | this.temperature.TEMPERATE | this.temperature.SUBTROPICAL | this.precipitation.MODERATE;
@@ -123,7 +123,7 @@ Game.BiomeTypes = {
         this.biomes.DUSTBOWL = this.GROWTH_AREA | this.temperature.TEMPERATE | this.precipitation.ARID;
 
         // subtropical types
-        this.biomes.SCRUB = this.GROWTH_AREA | this.temperature.SUBTROPICAL | this.precipitation.SEMIARID;
+        this.biomes.SCRUBLAND = this.GROWTH_AREA | this.temperature.SUBTROPICAL | this.precipitation.SEMIARID;
         this.biomes.DESERT = this.GROWTH_AREA | this.ANY_HOT | this.precipitation.ARID;
 
         // tropical types
@@ -134,12 +134,221 @@ Game.BiomeTypes = {
     }
 }.init();
 
-/*
-    usage:
 
-    var Tile should have three bits set, corresponding to one each of ELEVATION, LATITUDE, and PRECIPITATION
-    To check if a Tile is one of the above-defined biomes, use:
+// hashtable for area construction within a given biome
+// relates each world biome type to a tileset and a map generator function
+// these could also include encounter or item tables
 
-    ( Tile & Game.BiomeTypes.biomes[i] ) === Tile
+// TODO: make correct tilesets and generators for each of these
+Game.BiomeArea = {
 
- */
+    POLAR_ICECAP: {
+        tileset: Game.Tilesets.polar,
+        builder: Game.Generators.generateOpen,
+        sightRadiusMultiplier: 2.5,
+        hungerMultiplier: 1
+    },
+
+    GLACIER: {
+        tileset: Game.Tilesets.glacier,
+        builder: Game.Generators.generateDense,
+        sightRadiusMultiplier: 1,
+        hungerMultiplier: 1
+    },
+
+    DEEP_WATER: {
+        tileset: Game.Tilesets.ocean,
+        builder: Game.Generators.generateOpen,
+        sightRadiusMultiplier: 0.5,
+        hungerMultiplier: 1
+    },
+
+    SHALLOW_WATER: {
+        tileset: Game.Tilesets.ocean,
+        builder: Game.Generators.generateOpen,
+        sightRadiusMultiplier: 1,
+        hungerMultiplier: 1
+    },
+
+    SNOWCAP: {
+        tileset: Game.Tilesets.snowcap,
+        builder: Game.Generators.generateSparse,
+        sightRadiusMultiplier: 1.5,
+        hungerMultiplier: 1
+    },
+
+    MOUNTAIN: {
+        tileset: Game.Tilesets.rocky,
+        builder: Game.Generators.generateSparse,
+        sightRadiusMultiplier: 1.5,
+        hungerMultiplier: 1
+    },
+
+    BADLANDS: {
+        tileset: Game.Tilesets.redrock,
+        builder: Game.Generators.generateScattered,
+        sightRadiusMultiplier: 1,
+        hungerMultiplier: 1
+    },
+
+    CRAG: {
+        tileset: Game.Tilesets.rocky,
+        builder: Game.Generators.generateDense,
+        sightRadiusMultiplier: 1,
+        hungerMultiplier: 1
+    },
+
+    COLD_BEACH: {
+        tileset: Game.Tilesets.coldbeach,
+        builder: Game.Generators.generateOpen,
+        sightRadiusMultiplier: 3,
+        hungerMultiplier: 1
+    },
+
+    BEACH: {
+        tileset: Game.Tilesets.beach,
+        builder: Game.Generators.generateOpen,
+        sightRadiusMultiplier: 3,
+        hungerMultiplier: 1
+    },
+
+    MARSHLAND: {
+        tileset: Game.Tilesets.marsh,
+        builder: Game.Generators.generateDense,
+        sightRadiusMultiplier: 1,
+        hungerMultiplier: 1
+    },
+
+    SWAMP: {
+        tileset: Game.Tilesets.swamp,
+        builder: Game.Generators.generateThick,
+        sightRadiusMultiplier: 1,
+        hungerMultiplier: 1
+    },
+
+    TUNDRA: {
+        tileset: Game.Tilesets.tundra,
+        builder: Game.Generators.generateScattered,
+        sightRadiusMultiplier: 3,
+        hungerMultiplier: 1
+    },
+
+    BARRENS: {
+        tileset: Game.Tilesets.coldbarrens,
+        builder: Game.Generators.generateOpen,
+        sightRadiusMultiplier: 3,
+        hungerMultiplier: 1
+    },
+
+    TAIGA: {
+        tileset: Game.Tilesets.taiga,
+        builder: Game.Generators.generateDense,
+        sightRadiusMultiplier: 1,
+        hungerMultiplier: 1
+    },
+
+    COLD_SCRUBLAND: {
+        tileset: Game.Tilesets.coldscrub,
+        builder: Game.Generators.generateScattered,
+        sightRadiusMultiplier: 2.5,
+        hungerMultiplier: 1
+    },
+
+    COLD_DESERT: {
+        tileset: Game.Tilesets.colddesert,
+        builder: Game.Generators.generateOpen,
+        sightRadiusMultiplier: 3,
+        hungerMultiplier: 1
+    },
+
+    CONIFEROUS_FOREST: {
+        tileset: Game.Tilesets.rainforest,
+        builder: Game.Generators.generateThick,
+        sightRadiusMultiplier: 1,
+        hungerMultiplier: 1
+    },
+
+    BROADLEAF_FOREST: {
+        tileset: Game.Tilesets.forest,
+        builder: Game.Generators.generateDense,
+        sightRadiusMultiplier: 1,
+        hungerMultiplier: 1
+    },
+
+    SHRUBLAND: {
+        tileset: Game.Tilesets.shrub,
+        builder: Game.Generators.generateSparse,
+        sightRadiusMultiplier: 1.5,
+        hungerMultiplier: 1
+    },
+
+    GRASSLAND: {
+        tileset: Game.Tilesets.plains,
+        builder: Game.Generators.generateOpen,
+        sightRadiusMultiplier: 3,
+        hungerMultiplier: 1
+    },
+
+    DUSTBOWL: {
+        tileset: Game.Tilesets.dust,
+        builder: Game.Generators.generateOpen,
+        sightRadiusMultiplier: 3,
+        hungerMultiplier: 1
+    },
+
+    SCRUBLAND: {
+        tileset: Game.Tilesets.scrub,
+        builder: Game.Generators.generateScattered,
+        sightRadiusMultiplier: 2.5,
+        hungerMultiplier: 1
+    },
+
+    DESERT: {
+        tileset: Game.Tilesets.desert,
+        builder: Game.Generators.generateOpen,
+        sightRadiusMultiplier: 3,
+        hungerMultiplier: 1
+    },
+
+    JUNGLE: {
+        tileset: Game.Tilesets.jungle,
+        builder: Game.Generators.generateThick,
+        sightRadiusMultiplier: 0.5,
+        hungerMultiplier: 1
+    },
+
+    SAVANNA: {
+        tileset: Game.Tilesets.savanna,
+        builder: Game.Generators.generateScattered,
+        sightRadiusMultiplier: 2,
+        hungerMultiplier: 1
+    },
+
+
+    // town and dungeon "biomes"
+
+    TOWN: {
+        tileset: Game.Tilesets.tower,
+        builder: Game.Generators.generateCave,
+        sightRadiusMultiplier: 1,
+        hungerMultiplier: 1
+    },
+
+    CAVE: {
+        tileset: Game.Tilesets.cave,
+        builder: Game.Generators.generateCave,
+        sightRadiusMultiplier: 1,
+        hungerMultiplier: 1
+    },
+
+    DUNGEON: {
+        tileset: Game.Tilesets.tower,
+        builder: Game.Generators.generateCave,
+        sightRadiusMultiplier: 1,
+        hungerMultiplier: 1
+    }
+
+
+
+
+};

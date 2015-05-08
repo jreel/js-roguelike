@@ -157,12 +157,12 @@ Game.Templates.Monsters = {
 };
 
 
-Game.MonsterRepository = new Game.Repository('monsters', Game.Creature, Game.Templates.Monsters);
+Game.MonsterRepository = new Game.Factory('monsters', Game.Creature, Game.Templates.Monsters);
 
 /* To me, the template system above is easier to read/write/maintain than the
-   Repository.define system commented out below.
+   Factory.define system commented out below.
 
-   Ideally, the Game.Repository constructor function would also accept a
+   Ideally, the Game.Factory constructor function would also accept a
    template collection object as an argument, and execute the .define methods on each
    member template automatically.
 

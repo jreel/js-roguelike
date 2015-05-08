@@ -13,9 +13,12 @@ Game.Area = function (params) {
         width: Game.screenWidth * 2,
         height: Game.screenHeight * 2,
         world: null,
+        parentX: 0,
+        parentY: 0,
         biome: null,                         //  TODO: type of area/map
         map: null,                           // holds Game.Map object
         fov: null,
+        sightRadiusMultiplier: 1,
         clevel: 1                    // average creature level
     };
 
@@ -38,8 +41,23 @@ Game.Area = function (params) {
 
     this.entities = {};               // table to hold entities on this area, stored by position
     this.items = {};                     // table to hold items on this area
+
+    this.parentLevel = {};
+    this.subLevel = {};
+
 };
 
+Game.Area.prototype.isOverworld = function() {
+    return (this.biome === "WORLD");
+};
+Game.Area.prototype.isWorldArea = function() {
+    return (this.parentLevel !== null && this.parentLevel.area.isOverworld());
+};
+Game.Area.prototype.isSubArea = function() {
+    // to be easy, we'll just define a subArea as an area that
+    // is not a world Area, and is not the overworld.
+    return (!this.isOverworld() && !this.isWorldArea());
+};
 
 Game.Area.prototype.populate = function(population) {
 
@@ -57,7 +75,7 @@ Game.Area.prototype.populate = function(population) {
     // var templates = Object.keys(Game.Templates.Monsters);
     for (var p = 0; p < population; p++) {
         var monster = Game.MonsterRepository.createRandom();
-        this.addEntityAtRandomPosition(monster);
+        this.placeEntityAtRandomPosition(monster);
         // level up the new entity automatically based on the area clevel
         if (monster.gainsExperience) {
             for (var lvl = 0; lvl < this.clevel; lvl++) {
@@ -81,11 +99,39 @@ Game.Area.prototype.populate = function(population) {
 
 Game.Area.prototype.setupFov = function() {
     // set up field-of-view for the area
-    // TODO: variable fov based on area type - is this needed here?
     var area = this;
     area.fov = new ROT.FOV.RecursiveShadowcasting(function (x, y) {
-        return (area.map.getTile(x, y).isTransparent);
+        return (area.map.getTile(x, y).passesLight);
     });
+};
+
+Game.Area.prototype.addDungeon = function(options) {
+    options = options || {};
+
+    var depth = options['dungeonDepth'] || randomInt(3, 4);
+    var dungeonLoc = this.map.getRandomFloorPosition();
+    this.dungeon = new Game.Dungeon({
+        parentArea: this,
+        parentX: dungeonLoc.x,
+        parentY: dungeonLoc.y,
+        numLevels: depth
+    });
+
+    // make stairs down
+    this.map.grid[dungeonLoc.x][dungeonLoc.y] = this.map.tileset.stairsDown;
+
+    var firstLevel = this.dungeon.levels[1];
+    this.subLevel.area = firstLevel;
+    firstLevel.parentLevel.x = dungeonLoc.x;
+    firstLevel.parentLevel.y = dungeonLoc.y;
+    firstLevel.parentLevel.area = this;
+
+    // make stairs up from the first dungeon level
+    var stairsLoc = firstLevel.map.getRandomFloorPosition();
+    firstLevel.map.grid[stairsLoc.x][stairsLoc.y] = firstLevel.map.tileset.stairsUp;
+
+    this.subLevel.x = stairsLoc.x;
+    this.subLevel.y = stairsLoc.y;
 };
 
 Game.Area.prototype.simulateTurns = function(numTurns) {
@@ -107,17 +153,21 @@ Game.Area.prototype.simulateTurns = function(numTurns) {
 
 /* Entity handling functions */
 
+// This does all the things necessary for adding an Entity to the Area.
+// Note that this generally shouldn't be called directly;
+// it is better called via updateEntityLocation().
 Game.Area.prototype.addEntity = function(entity) {
     // Make sure the entity's position is within bounds
     if (entity.x < 0 || entity.x >= this.map.width ||
         entity.y < 0 || entity.y >= this.map.height) {
-        throw new Error('Adding entity out of bounds.');
+        throw new Error('addEntity: entity position out of bounds.');
     }
     // Update the entity's area
     entity.area = this;
 
     // Add the entity to the list of entities
-    this.updateEntityPosition(entity);
+    var key = entity.x + ',' + entity.y;
+    this.entities[key] = entity;
 
     // Check if this entity is an actor, and if so
     // add them to the scheduler
@@ -126,11 +176,36 @@ Game.Area.prototype.addEntity = function(entity) {
     }
 };
 
-Game.Area.prototype.addEntityAtRandomPosition = function(entity) {
+Game.Area.prototype.placeEntityAtRandomPosition = function(entity) {
     var position = this.map.getRandomFloorPosition();
-    entity.x = position.x;
-    entity.y = position.y;
-    this.addEntity(entity);
+    this.updateEntityLocation(entity, position.x, position.y);
+};
+
+Game.Area.prototype.placeEntityAtPosition = function(x, y, entity) {
+    // tries to put the entity as close to the given x, y as possible
+    // based on available empty floor tiles
+    if (!this.map.isEmptyFloor(x, y)) {
+
+        var foundEmptyTile = false;
+        var radius = 1;
+        var tilesToCheck, tile, len;
+
+        while (!foundEmptyTile) {
+            tilesToCheck = this.map.getTilesWithinRadius(x, y, radius);
+            len = tilesToCheck.length;
+            for (var i = 0; i < len; i++) {
+                tile = tilesToCheck[i];
+                if (this.map.isEmptyFloor(tile.x, tile.y)) {
+                    foundEmptyTile = true;
+                    x = tile.x;
+                    y = tile.y;
+                    break;
+                }
+            }
+            radius++;
+        }
+    }
+    this.updateEntityLocation(entity, x, y);
 };
 
 Game.Area.prototype.removeEntity = function(entity) {
@@ -171,31 +246,60 @@ Game.Area.prototype.getEntitiesWithinRadius = function(centerX, centerY, radius)
     return results;
 };
 
-Game.Area.prototype.updateEntityPosition = function(entity, oldX, oldY, oldArea) {
-    // delete the old key
+Game.Area.prototype.updateEntityLocation = function(entity, newX, newY, newArea) {
 
-    // if an oldArea is specified, delete from that area and add to this area
-    // otherwise, delete from this area and re-add to this area
-    var whichArea = oldArea || this;
-    if (typeof oldX === 'number') {
+    var oldX = entity.x;
+    var oldY = entity.y;
+    var oldArea = entity.area;      // this may be undefined for brand-new entities.
+
+    // if newArea was not passed in, assume we don't want to change areas.
+    if (oldArea && !newArea) {
+        newArea = oldArea;
+    }
+
+    // if we still don't know what "newArea" means, assume it's 'this'
+    if (!newArea) {
+        newArea = this;
+    }
+
+    // make sure new position is within bounds
+    // (this should be checked before invoking this routine)
+    if (newX < 0 || newX >= newArea.width ||
+        newY < 0 || newY >= newArea.height) {
+        throw new Error("updateEntityLocation: new position is out of bounds.");
+    }
+    // check to make sure there is no entity at the new position
+    var newKey = newX + ',' + newY;
+    if (newArea.entities[newKey] && newArea.entities[newKey] !== entity) {
+        throw new Error("updateEntityLocation: tried to add an entity at an occupied position.");
+    }
+
+
+    // if we are not changing areas, simply delete the old key and add the new one.
+    if (newArea === oldArea) {
+
         var oldKey = oldX + ',' + oldY;
-        if (whichArea.entities[oldKey] === entity) {
-            delete whichArea.entities[oldKey];
+        if (oldArea.entities[oldKey] == entity) {
+            delete oldArea.entities[oldKey];
         }
-    }
+        newArea.entities[newKey] = entity;
 
-    // make sure entity's position is within bounds
-    if (entity.x < 0 || entity.x >= this.width ||
-        entity.y < 0 || entity.y >= this.height) {
-        throw new Error("Entity's position is out of bounds.");
+    } else {
+
+        if (oldArea) {
+            // remove from current area first;
+            // this also removes it from the area scheduler
+            // and deletes the key
+            oldArea.removeEntity(entity);
+        }
+
+        // now add to new area
+        entity.x = newX;
+        entity.y = newY;
+        // this will also create the key, and add it to
+        // the area scheduler.
+        newArea.addEntity(entity);
     }
-    // sanity check to make sure there is no entity at the new position
-    var key = entity.x + ',' + entity.y;
-    if (this.entities[key] && this.entities[key] !== entity) {
-        throw new Error("Tried to add an entity at an occupied position.");
-    }
-    // add the entity to the table of entries
-    this.entities[key] = entity;
 };
 
 

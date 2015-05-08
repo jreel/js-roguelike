@@ -7,6 +7,14 @@
  * http://ondras.github.io/rot.js/hp/
  */
 
+function exists(x) {
+    return (typeof x !== "undefined");
+}
+
+function notNull(x) {
+    return (x !== null);
+}
+
 
 // easy way to check/assign defaults for function parameters
 function defaultTo(parameter, defaultValue) {
@@ -84,6 +92,40 @@ Array.prototype.swap = Array.prototype.swap || function(firstIndex, secondIndex)
     this[secondIndex] = temp;
 };
 
+// splice a random element out of an array
+// (useful for picking several randoms "without replacement")
+// https://www.developphp.com/video/JavaScript/Get-or-Remove-Random-Array-Elements-Tutorial
+function randomSplice(array) {
+    var len = array.length;
+    var ri = randomInt(0, len - 1);
+    var item = array.splice(ri, 1);
+    return item[0];
+}
+
+// subtract array2 from array1
+// http://stackoverflow.com/questions/1187518/javascript-array-difference
+function arrayDiff(arr1, arr2) {
+    var a = [], diff = [];
+    var len1 = arr1.length;
+    var len2 = arr2.length;
+    for (var i = 0; i < len1; i++) {
+        a[arr1[i]] = true;
+    }
+    for (var j = 0; j < len2; j++) {
+        if (a[arr2[j]]) {
+            delete a[arr2[j]];
+        } else {
+            a[arr2[j]] = true;
+        }
+    }
+    for (var k in a) {
+        if (a.hasOwnProperty(k)) {
+            diff.push(k);
+        }
+    }
+    return diff;
+}
+
 // given an array, normalize as a percent of the largest value
 function normalizeArray(array) {
 
@@ -110,7 +152,7 @@ function normalizeArray(array) {
         results[i] = array[i] / largest;
     }
     return results;
-};
+}
 
 // given a grid, normalize as a percent of the largest value
 function normalizeGrid(data) {
@@ -139,7 +181,7 @@ function normalizeGrid(data) {
         }
     }
     return results;
-};
+}
 
 // given a grid, scale all the data as a percent of
 // the range defined by the smallest and largest values
@@ -174,7 +216,7 @@ function scaleGrid(data) {
         }
     }
     return results;
-};
+}
 
 
 // augment function (mainly for use with mixins);

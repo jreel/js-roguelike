@@ -11,9 +11,8 @@
 Game.Tile = function(properties) {
     var defaults = {
         isWalkable: false,
-        isDiggable: false,
-        isTransparent: false,
-        canSpawnHere: false
+        isBreakable: false,
+        passesLight: false
     };
 
     // apply defaults into our template where needed
@@ -131,4 +130,13 @@ Game.Tile.corridorTile = new Game.Tile({
     isDiggable: false,
     canSpawnHere: true,
     isTransparent: true
+});
+
+Game.Tile.closedDoorTile = new Game.Tile({
+    character: '+',
+    foreground: '#941',
+    isWalkable: false,
+    isDiggable: false,
+    canSpawnHere: false,
+    isTransparent: false
 });

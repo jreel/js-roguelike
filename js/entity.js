@@ -36,17 +36,20 @@ Game.Entity.prototype.getSpeed = function() {       // required for ROT.Schedule
     return this.speed;
 };
 
+Game.Entity.prototype.setLocation = function(x, y, area) {
 
-Game.Entity.prototype.setPosition = function(x, y) {
-    var oldX = this.x;
-    var oldY = this.y;
-    // update position
+    var oldArea;
+    if (this.area) {
+        oldArea = this.area;
+    } else {
+        oldArea = area;
+    }
+    oldArea.updateEntityLocation(this, x, y, area);
     this.x = x;
     this.y = y;
-    // if the entity is on a area, notify the area that the entity has moved
-    if (this.area) {
-        this.area.updateEntityPosition(this, oldX, oldY);
-    }
+
+    // player-specific code is in the setLocation method of the Player prototype
+
 };
 
 Game.Entity.prototype.kill = function(message) {

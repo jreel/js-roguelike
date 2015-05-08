@@ -47,32 +47,19 @@ Game.Mixins.movable = {
             if (this.isAttacker && this.willAttack(target)) {
                 this.attack(target);
                 return true;
+
             } else {
                 // if we can't attack the occupant,
                 // then we can't move to that tile
                 return false;
             }
-        } else if (tile.isWalkable) {
-            // if the tile is unoccupied,
-            // first check if this is a special tile
-            // and display message if so
-            if (this === Game.player) {
-                // TODO: re-write this whole bloody thing
-                // TODO: support for different tilesets
-                /*
-                if (tile == Game.Tile.prevLevelTile) {
-                    Game.sendMessage('info', this, "Press [Space] to go back to level %s.", level.area - 1);
-                }
-                if (tile == Game.Tile.nextLevelTile) {
-                    Game.sendMessage('info', this, "Press [Space] to advance to level %s.", level.area + 1);
-                }
-                if (tile == Game.Tile.holeToCavernTile) {
-                    Game.sendMessage('danger', this, "There is a dark, seemingly bottomless hole here. Press [Space] to jump in!");
-                }
-                */
-                // check if we can simply walk there
-                // and if so, update our position
-                this.setPosition(x, y);
+
+        } else if (this === Game.player) {
+
+            // this will check for all the contingencies
+            // such as walkable, breakable, etc.
+            if (this.move(x, y)) {
+
                 // if there are items here, let the player know
                 var items = area.getItemsAt(x, y);
                 if (items) {
@@ -83,25 +70,22 @@ Game.Mixins.movable = {
                     }
                 }
                 return true;
-            } else if (tile.canSpawnHere) {
-                this.setPosition(x, y);
-                return true;
             } else {
-                // this is not a player,
-                // and the tile is set for mobs to not be here
-                // (for instance, stairs... mobs randomly moving onto
-                // stairs may prevent player from accessing them.
                 return false;
             }
-        } else if (tile.isDiggable && this === Game.player) {
-            // if the tile isn't walkable,
-            // check if it's diggable
-            //TODO: tools, penalties for digging?
-            area.map.dig(x, y);
+
+        } else if (tile.isWalkable) {
+            // we're not the player, but we can still walk
+            // onto the tile
+            this.setLocation(x, y);
             return true;
+
         } else {
+            // we're not the player, and the tile isn't walkable;
+            // not much we can do here.
             return false;
         }
+
     }
 };
 
@@ -313,23 +297,28 @@ Game.Mixins.sight = {
         this.sightRadius += amount;
         Game.sendMessage('info', this, "You feel more aware!");
     },
+    getAreaSightRadius: function() {
+        var area = this.area;
+        return this.sightRadius * area.sightRadiusMultiplier;
+    },
     canSee: function(entity) {
         // if not in the same area, then exit early
         if (!entity || this.area !== entity.area) {
             return false;
         }
+        var sightRadius = this.getAreaSightRadius();
         // if we're not in a square field of view, then we won't be in a real
         // field of view either (this is to save FOV computation if it's not needed)
         var squareX = (entity.x - this.x) * (entity.x - this.x);
         var squareY = (entity.y - this.y) * (entity.y - this.y);
-        if ((squareX + squareY) > (this.sightRadius * this.sightRadius)) {
+        if ((squareX + squareY) > (sightRadius * sightRadius)) {
             return false;
         }
         // compute the FOV and check if coordinates are within
         var found = false;
         this.area.fov.compute(
             this.x, this.y,
-            this.sightRadius,
+            sightRadius,
             function(x, y, radius, visibility) {
                 if (x === entity.x && y === entity.y) {
                     found = true;
@@ -451,33 +440,33 @@ Game.Mixins.foodEater = {
         if (this.fullness <= 0) {
             this.kill("You have died of starvation!");
         } else if (hungerPct <= 5) {
-            this.hungryToken = true;
-            this.fullToken = false;
+            this.tokens['hungry'] = true;
+            this.tokens['full'] = false;
             Game.sendMessage('danger', this, "You are starving!");
         } else if (hungerPct <= 25) {
-            this.fullToken = false;
-            if (!this.hungryToken) {
+            this.tokens['full'] = false;
+            if (!this.tokens['hungry']) {
                 Game.sendMessage('warning', this, "You feel hungry.");
-                this.hungryToken = true;
+                this.tokens['hungry'] = true;
             }
         } else if (this.fullness > this.maxFullness) {
             this.kill("Your stomach has ruptured from overeating!");
         } else if (hungerPct >= 95) {
-            this.hungryToken = false;
-            this.fullToken = true;
-            if (!this.burstToken) {
-                this.burstToken = true;
+            this.tokens['hungry'] = false;
+            this.tokens['full'] = true;
+            if (!this.tokens['bursting']) {
+                this.tokens['bursting'] = true;
                 Game.sendMessage('danger', this, "You have eaten so much you feel like you will burst!");
             }
         } else if (hungerPct >= 75) {
-            this.hungryToken = false;
-            if (!this.fullToken) {
+            this.tokens['hungry'] = false;
+            if (!this.tokens['full']) {
                 Game.sendMessage('warning', this, "You feel full.");
-                this.fullToken = true;
+                this.tokens['full'] = true;
             }
         } else {
-            this.hungryToken = false;
-            this.fullToken = false;
+            this.tokens['hungry'] = false;
+            this.tokens['full'] = false;
         }
     },
     getHungerState: function() {
