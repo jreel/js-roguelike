@@ -21,8 +21,6 @@
 
 Game.Generators = {};
 
-// TODO: change all of these to accept a tileset parameter;
-// also need to change tile.js
 Game.Generators.generateCave = function(width, height, tileset) {
     if (!tileset) {
         tileset = Game.Tilesets.cave;
@@ -35,7 +33,7 @@ Game.Generators.generateCave = function(width, height, tileset) {
     }
 
     // setup the cave generator
-    var generator = new ROT.Map.Cellular(width, height, { connected: true });
+    var generator = new ROT.Map.Cellular(width - 2, height - 2, { connected: true });
     generator.randomize(0.5);
     var totalIterations = 4;
     // Iteratively smooth out the map
@@ -45,17 +43,65 @@ Game.Generators.generateCave = function(width, height, tileset) {
     // smooth the map one last time and then update
     generator.create(function(x, y, v) {
         if (v === 0) {
+            grid[x+1][y+1] = tileset.floor;
+        }
+        else {
+            grid[x+1][y+1] = tileset.wall;
+        }
+    });
+
+    // TODO: find a better solution than the "border of bedrock"
+    for (var x = 0; x < width; x++) {
+        grid[x][0] = tileset.blocked;
+        grid[x][height - 1] = tileset.blocked;
+    }
+    for (var y = 0; y < height; y++) {
+        grid[0][y] = tileset.blocked;
+        grid[width - 1][y] = tileset.blocked;
+    }
+
+    return grid;
+};
+
+Game.Generators.generateCellular = function(width, height, tileset, percent, options) {
+    tileset = tileset || Game.Tilesets.forest;
+    options = options || {};
+
+    // create the empty map based on parameters
+    var grid = new Array(width);
+    for (var w = 0; w < width; w++) {
+        grid[w] = new Array(height);
+    }
+    // setup the cave generator
+    var generator = new ROT.Map.Cellular(width, height, { connected: true });
+    generator.randomize(percent);
+
+    generator.create(function(x, y, v) {
+        if (v === 0) {
             grid[x][y] = tileset.floor;
         }
         else {
             grid[x][y] = tileset.wall;
         }
-    });
-
+    }
+    );
     return grid;
 };
-
-
+Game.Generators.generateThick = function(width, height, tileset) {
+    return Game.Generators.generateCellular(width, height, tileset, 0.55);
+};
+Game.Generators.generateDense = function(width, height, tileset) {
+    return Game.Generators.generateCellular(width, height, tileset, 0.45);
+};
+Game.Generators.generateSparse = function(width, height, tileset) {
+    return Game.Generators.generateCellular(width, height, tileset, 0.35);
+};
+Game.Generators.generateScattered = function(width, height, tileset) {
+    return Game.Generators.generateCellular(width, height, tileset, 0.25);
+};
+Game.Generators.generateOpen = function(width, height, tileset) {
+    return Game.Generators.generateCellular(width, height, tileset, 0.15);
+};
 
 
 

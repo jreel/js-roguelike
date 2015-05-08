@@ -35,9 +35,9 @@ Game.Map = function(grid, tileset) {
 
 };
 
-Game.Map.prototype.getWrapped = function(x) {
+Game.Map.prototype.getWrappedX = function(x) {
     if (!this.wrap) {
-        return x;
+        x = this.getConstrainedX(x);
     }
     if (x < 0) {
         x += this.width;
@@ -46,13 +46,45 @@ Game.Map.prototype.getWrapped = function(x) {
     }
     return x;
 };
+Game.Map.prototype.getConstrainedX = function(x) {
+    if (x < 0) {
+        x = 0;
+    } else if (x >= this.width) {
+        x = this.width - 1;
+    }
+    return x;
+};
+Game.Map.prototype.getConstrainedY = function(y) {
+    if (y < 0) {
+        y = 0;
+    } else if (y >= this.height) {
+        y = this.height - 1;
+    }
+    return y;
+};
+
+Game.Map.prototype.detectMapEdge = function(x, y) {
+    var edges = {};
+
+    edges.W = (x === 0);
+    edges.E = (x === this.width - 1);
+    edges.N = (y === 0);
+    edges.S = (y === this.height - 1);
+
+    if (edges.W || edges.E || edges.N || edges.S) {
+        edges.any = true;
+    } else {
+        edges.any = false;
+    }
+    return edges;
+};
 
 // Gets the tile for a given coordinate
 Game.Map.prototype.getTile = function(x, y) {
     // if map should wrap, we should re-calculate the
     // correct (wrapped) x-coordinate
     if (this.wrap) {
-        x = this.getWrapped(x);
+        x = this.getWrappedX(x);
     }
 
     // Make sure we are inside bounds.
@@ -89,6 +121,25 @@ Game.Map.prototype.getNeighborTiles = function(x, y) {
         }
     }
     return tiles.randomize();
+};
+
+Game.Map.prototype.getTilesWithinRadius = function(centerX, centerY, radius) {
+    var results = [];
+    // Determine the bounds
+    var leftX = centerX - radius;
+    var rightX = centerX + radius;
+    var topY = centerY - radius;
+    var bottomY = centerY + radius;
+
+    for (var x = leftX; x <= rightX; x++) {
+        for (var y = topY; y <= bottomY; y++) {
+            if (x === centerX && y === centerX) {
+                continue;
+            }
+            results.push({x: x, y: y});
+        }
+    }
+    return results.randomize();
 };
 
 Game.Map.prototype.isAdjacent = function(x, y, tile) {
@@ -150,7 +201,7 @@ Game.Map.prototype.floodFill = function(x, y, flagsArray, flag) {
 Game.Map.prototype.fillRegion = function(region, x, y, masterArray) {
 
     if (this.wrap) {
-        x = this.getWrapped(x);
+        x = this.getWrappedX(x);
     }
 
     // update the region of the original tile
@@ -170,7 +221,7 @@ Game.Map.prototype.fillRegion = function(region, x, y, masterArray) {
             if (this.getTile(tile.x, tile.y).isWalkable) {
 
                 if (this.wrap) {
-                    tile.x = this.getWrapped(tile.x);
+                    tile.x = this.getWrappedX(tile.x);
                 }
 
                 if (masterArray[tile.x][tile.y] === 0) {
@@ -202,9 +253,8 @@ Game.Map.prototype.getRandomFloorPosition = function() {
 };
 
 // Map-changing abilities
-Game.Map.prototype.dig = function(x, y) {
-    // If the tile is diggable, update it to a floor
-    // TODO: update for different tilesets
+Game.Map.prototype.breakTile = function(x, y) {
+    // If the tile is breakable, update it to a floor
     if (this.getTile(x, y).isBreakable) {
         this.grid[x][y] = this.tileset.floor;
     }

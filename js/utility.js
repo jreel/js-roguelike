@@ -7,6 +7,14 @@
  * http://ondras.github.io/rot.js/hp/
  */
 
+function exists(x) {
+    return (typeof x !== "undefined");
+}
+
+function notNull(x) {
+    return (x !== null);
+}
+
 
 // easy way to check/assign defaults for function parameters
 function defaultTo(parameter, defaultValue) {

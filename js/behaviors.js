@@ -36,7 +36,7 @@ Game.Behaviors = {
         }
 
         var newGrowth = Game.MonsterRepository.create(owner.name);
-        newGrowth.setPosition(xTarget, yTarget);
+        newGrowth.setLocation(xTarget, yTarget);
         area.addEntity(newGrowth);
         owner.growthRemaining--;
 
@@ -136,7 +136,7 @@ Game.Behaviors = {
 
         // create the slime
         var slime = Game.MonsterRepository.create('slime');
-        slime.setPosition(xTarget, yTarget);
+        slime.setLocation(xTarget, yTarget);
         area.addEntity(slime);
 
         return true;

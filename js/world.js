@@ -15,43 +15,43 @@
 // Other Areas will be generated only when they are first visited.
 Game.World = function(options) {
     options = options || {};
+
+    // generate world data and overworld area
     var mapSize = options.mapSize || 128;
     mapSize = nearestPowerOf2(mapSize);
-
     this.mapSize = mapSize;
 
     this.worldName = "";            // Markov generated?
-    this.areas = [];            // populated from createArea() method
+    this.worldId = 0;               // set to index of Game.worlds[]
 
     this.dataMap = this.generateDataMap(mapSize);      // 2D data store
-    var worldMap = this.generateWorldMap(mapSize);      // returns a Game.Map object
+    var worldMap = this.generateWorldMap(mapSize);     // returns a Game.Map object
 
-    // addArea will add some other properties,
-    // pass to Game.Area constructor, setup fov, push to this.areas[],
-    // and return the new Area object.
-    this.overWorld = this.addArea({ width: mapSize,
+    // generateOverworldArea method will add some other properties,
+    // pass to Game.Area constructor, setup fov, and return new Area object.
+    this.overworld = this.generateOverworldArea({
+                                    width: mapSize,
                                     height: mapSize,
                                     biome: "WORLD",
+                                    sightRadiusMultiplier: 20,
                                     map: worldMap });
 
     var numTowns = randomNormalInt(mapSize / 10, mapSize / 50);
     this.placeTowns(numTowns);
 
+    this.currentArea = this.overworld;
 
-    this.currentArea = this.overWorld;
+    this.worldAreas = {};           // key [x,y]: Area, populated from addArea() method
 
-
-
-    //this.findContinents();
 
 };
 
 Game.World.prototype.getRandomLandLocation = function() {
-    var exceptedBiomes = ["POLAR_ICECAP", "GLACIER", "DEEP_WATER", "SHALLOW_WATER"];
+    var exceptedBiomes = ["DEEP_WATER", "SHALLOW_WATER", "POLAR_ICECAP", "GLACIER",
+                            "DESERT", "COLD_DESERT"];
 
-    var rejected = [];
 
-    var x, y, biome, keepLooking;
+    var x, y, biome, keepLooking, sanityCounter = 10000;
     do {
         x = randomInt(0, this.mapSize - 1);
         y = randomInt(0, this.mapSize - 1);
@@ -62,11 +62,55 @@ Game.World.prototype.getRandomLandLocation = function() {
         } else {
             return {x: x, y: y, biome: biome};
         }
+        sanityCounter--;
 
-    } while (keepLooking);
+    } while (keepLooking && sanityCounter > 0);
 
+    // if we still haven't found a good spot at this point,
+    // return false... we can handle that in the calling routine
+    return false;
 };
 
+
+Game.World.prototype.generateOverworldArea = function(options) {
+    options = options || {};
+
+    options.width = options['width'] || this.mapSize || 256;
+    options.height = options['height'] || this.mapSize || 256;
+
+    // options should pass in a world map
+    // generate a new one if not
+    if (!options.map) {
+        var mapSize = Math.max(options.width, options.height);
+        if (!this.dataMap) {
+            this.dataMap = this.generateDataMap(mapSize)
+        }
+        options.map = this.generateWorldMap(mapSize);
+    }
+
+    if (!options.biome) {
+        options.biome = "WORLD";
+    }
+
+    options.sightRadiusMultiplier = options['sightRadiusMultiplier'] || 20;
+    options.world = this;
+
+    var overworld = new Game.Area(options);
+
+    // since this Area is the worldMap itself, set the parentLevel to null
+    overworld.parentLevel = null;
+
+    overworld.map.area = overworld;
+    overworld.map.wrap = true;
+
+    overworld.setupFov();
+
+    return overworld;
+};
+
+// this is for adding world Areas to the game world.
+// for adding sub-Areas (sublevels) to world Areas, use the
+// method of the Area prototype
 Game.World.prototype.addArea = function(options) {
     options = options || {};
 
@@ -86,74 +130,78 @@ Game.World.prototype.addArea = function(options) {
         options.map = new Game.Map(tiles, tileset);
     }
 
-    // set option as to whether the area map should wrap or not:
-    // if biome is "WORLD" (i.e., the overworld map), then yes
-    // otherwise, no
-    var wrapMap = (options.biome === "WORLD");
-
-
+    options.sightRadiusMultiplier = options['sightRadiusMultiplier'] || biomeArea.sightRadiusMultiplier;
     options.world = this;
-    options.id = this.areas.length;
-    var area = new Game.Area(options);
-    area.map.area = area;
-    area.map.wrap = wrapMap;
-    area.setupFov();
-    this.areas.push(area);
 
-    return area;
+    // generate key for world Areas table
+    options.id = options['parentX'] + ',' + options['parentY'];
+
+    var newArea = new Game.Area(options);
+
+    // since this is an Area of the world, set the parentLevel to the overworld
+    newArea.parentLevel.area = this.overworld;
+    newArea.parentLevel.x = options['parentX'];
+    newArea.parentLevel.y = options['parentY'];
+
+    newArea.map.area = newArea;
+    newArea.map.wrap = false;
+
+    newArea.setupFov();
+
+    // chance to add Dungeon
+    var chance = options['dungeonChance'] || 100;
+    var roll = randomPercent();
+    if (roll <= chance) {
+        newArea.addDungeon();
+    }
+
+    // add to the areas table
+    if (options.id) {
+        this.worldAreas[options.id] = newArea;
+    }
+
+    return newArea;
 };
 
 Game.World.prototype.findGoodTownLocations = function(amount) {
 
-    var favoredBiomes = ["COLD_BEACH", "BEACH", "TAIGA", "RAINFOREST", "DECIDUOUS",
-                         "SHRUBLAND", "GRASSLAND", "SAVANNA"];
+    var favoredBiomes = ["COLD_BEACH", "BEACH", "TAIGA", "CONIFEROUS_FOREST",
+                         "BROADLEAF_FOREST", "SHRUBLAND", "GRASSLAND", "SAVANNA"];
 
-    var okBiomes = ["COLD_SCRUB", "SCRUB", "JUNGLE", "ALPINE"];
+    var okBiomes = ["COLD_SCRUBLAND", "SCRUBLAND", "JUNGLE", "MOUNTAIN"];
 
-    var harshBiomes = ["COLD_DESERT", "DUSTBOWL", "DESERT", "COLD_BARRENS", "CRAG",
-                           "BADLANDS", "MARSHLAND", "SWAMP", "TUNDRA", "POLAR_ICECAP",
-                           "SNOWCAP"];
+    var harshBiomes = ["COLD_DESERT", "DUSTBOWL", "DESERT", "BARRENS", "CRAG",
+                       "BADLANDS", "MARSHLAND", "SWAMP", "TUNDRA", "SNOWCAP"];
 
     var cellBiome;
 
-    // iterate over the map, store a collection of x,y in good biomes
-    // try the best biomes first
+    // iterate over the map, store x,y in each biome set
+
     var goodLocs = [];
+    var okLocs = [];
+    var harshLocs = [];
+
     for (var x = 0; x < this.mapSize; x++) {
         for (var y = 0; y < this.mapSize; y++) {
             cellBiome = this.getBiomeName(x, y);
             if (favoredBiomes.indexOf(cellBiome) !== -1) {
-                goodLocs.push({x:x, y:y});
+                goodLocs.push({x: x, y: y});
+            } else if (okBiomes.indexOf(cellBiome) !== -1) {
+                okLocs.push({ x: x, y: y });
+            } else if (harshBiomes.indexOf(cellBiome) !== -1) {
+                harshLocs.push({ x: x, y: y });
             }
         }
     }
 
-    // if we didn't find enough tiles in the best biomes, try the "ok" ones
+    // if we haven't found the requested number of locations,
+    // add in the less-desirable ones
     if (goodLocs.length < amount) {
-        for (x = 0; x < this.mapSize; x++) {
-            for (y = 0; y < this.mapSize; y++) {
-                cellBiome = this.getBiomeName(x, y);
-                if (okBiomes.indexOf(cellBiome) !== -1) {
-                    goodLocs.push({x:x, y:y});
-                }
-            }
-        }
+        goodLocs = goodLocs.concat(okLocs);
     }
-
-    // if we still didn't find enough, then our world is a harsh one,
-    // and we need to search the harsh biomes array
     if (goodLocs.length < amount) {
-        for (x = 0; x < this.mapSize; x++) {
-            for (y = 0; y < this.mapSize; y++) {
-                cellBiome = this.getBiomeName(x, y);
-                if (harshBiomes.indexOf(cellBiome) !== -1) {
-                    goodLocs.push({x:x, y:y});
-                }
-            }
-        }
+        goodLocs = goodLocs.concat(harshLocs);
     }
-
-    //goodLocs = goodLocs.randomize();
 
     return goodLocs;
 
@@ -161,7 +209,7 @@ Game.World.prototype.findGoodTownLocations = function(amount) {
 
 Game.World.prototype.placeTowns = function(amount) {
     var goodLocs = this.findGoodTownLocations(amount);
-    var map = this.overWorld.map.grid;
+    var map = this.overworld.map.grid;
     var townLoc;
     for (var i = 0; i < amount; i++) {
         townLoc = randomSplice(goodLocs);
@@ -204,56 +252,6 @@ Game.World.prototype.generateWorldMap = function(mapSize) {
 
 };
 
-Game.World.prototype.findContinents = function() {
-    var map = this.overWorld.map;
-    var mapSize = map.width;
-
-    this.regions = new Array(mapSize);
-    for (var x = 0; x < mapSize; x++) {
-        this.regions[x] = new Array(mapSize);
-        // fill with zeroes
-        for (var y = 0; y < mapSize; y++) {
-            this.regions[x][y] = 0;
-        }
-    }
-
-    var region = 1;
-    // iterate through all tiles searching for a tile that
-    // can be used as the starting point for a flood fill
-    for (x = 0; x < mapSize; x++) {
-        for (y = 0; y < mapSize; y++) {
-            if (map.getTile(x, y).isWalkable &&
-                this.regions[x][y] === 0) {
-
-                map.fillRegion(region, x, y, this.regions);
-
-                region++;
-            }
-        }
-    }
-
-    /*
-    // now convert regions array to continents
-    var continents = {};
-    var mapCell;
-    for (x = 0; x < mapSize; x++) {
-        for (y = 0; y < mapSize; y++) {
-            region = this.regions[x][y];
-            if (region !== 0) {
-                if (!continents[region]) {
-                    continents[region] = [];
-                }
-                mapCell = x + ',' + y;
-                if (continents[region].indexOf(mapCell) === -1) {
-                    continents[region].push(mapCell);
-                }
-            }
-        }
-    }
-
-    return continents;
-*/
-};
 
 Game.World.prototype.getBiomeName = function(x, y) {
     var biomeKeys = getKeysSortedByValue(Game.BiomeTypes.biomes);
@@ -280,7 +278,14 @@ Game.World.prototype.getBiomeValue = function(x, y) {
     }
     return false;
 };
-
+Game.World.prototype.getBiomeNameFormatted = function(x, y) {
+    var biomeName = this.getBiomeName(x, y);
+    if (biomeName) {
+        biomeName = biomeName.toLowerCase();
+        biomeName = biomeName.replace("_", " ");
+    }
+    return biomeName;
+};
 
 
 

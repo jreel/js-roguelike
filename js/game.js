@@ -183,19 +183,23 @@ var Game = {
 
         // TODO: starting script
         var world = new Game.World();
+        world.worldId = Game.worlds.length;
         Game.worlds.push(world);
         Game.currentWorld = world;
 
         // pick a new area in the world to start in
         var startingLocation = world.getRandomLandLocation();
         var startingArea = world.addArea({  biome: startingLocation.biome,
-                                            worldX: startingLocation.x,
-                                            worldY: startingLocation.y  });
+                                            parentX: startingLocation.x,
+                                            parentY: startingLocation.y  });
 
         world.currentArea = startingArea;
 
         // add player to world
-        startingArea.addEntityAtRandomPosition(this.player);
+        var x = startingArea.map.width / 2;
+        var y = startingArea.map.height / 2;
+
+        this.player.setLocation(x, y, startingArea);
 
         // Start the current area engine
         startingArea.engine.start();
