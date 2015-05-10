@@ -44,9 +44,14 @@ Game.Entity.prototype.setLocation = function(x, y, area) {
     } else {
         oldArea = area;
     }
+
+    // handle the entities key deletions and additions
     oldArea.updateEntityLocation(this, x, y, area);
+    /*
+    area.placeEntityAtPosition(x, y, this);
     this.x = x;
     this.y = y;
+    */
 
     // player-specific code is in the setLocation method of the Player prototype
 

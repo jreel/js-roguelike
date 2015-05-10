@@ -362,7 +362,7 @@ Game.BSPdungeon.prototype.createGridArray = function(arrayToUse) {
     for (x = 0; x < this.masterWidth; x++) {
         grid[x] = new Array(this.masterHeight);
         for (y = 0; y < this.masterHeight; y++) {
-            grid[x][y] = this.tileset.wall;
+            grid[x][y] = 1; //this.tileset.wall;
         }
     }
 
@@ -372,7 +372,7 @@ Game.BSPdungeon.prototype.createGridArray = function(arrayToUse) {
         // for each room/partition in chosen array, loop through the tiles
         for (pX = arrayToUse[p].topLeftX; pX <= arrayToUse[p].bottomRightX; pX++) {
             for (pY = arrayToUse[p].topLeftY; pY <= arrayToUse[p].bottomRightY; pY++) {
-                grid[pX][pY] = this.tileset.floor;
+                grid[pX][pY] = 0; //this.tileset.floor;
             }
         }
     }
@@ -384,7 +384,7 @@ Game.BSPdungeon.prototype.createGridArray = function(arrayToUse) {
         var c, corr, clen = this.corridors.length;
         for (c = 0; c < clen; c++) {
             corr = this.corridors[c];
-            grid[corr.x][corr.y] = this.tileset.corridor;
+            grid[corr.x][corr.y] = 2; //this.tileset.corridor;
         }
     }
 

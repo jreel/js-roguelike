@@ -157,7 +157,7 @@ Game.Templates.Monsters = {
 };
 
 
-Game.MonsterRepository = new Game.Factory('monsters', Game.Creature, Game.Templates.Monsters);
+Game.MonsterFactory = new Game.Factory('monsters', Game.Creature, Game.Templates.Monsters);
 
 /* To me, the template system above is easier to read/write/maintain than the
    Factory.define system commented out below.
@@ -170,7 +170,7 @@ Game.MonsterRepository = new Game.Factory('monsters', Game.Creature, Game.Templa
 
 
 /*
-Game.MonsterRepository.define('fungus', {
+Game.MonsterFactory.define('fungus', {
     name: 'fungus',
     character: 'F',
     foreground: 'green',
@@ -183,7 +183,7 @@ Game.MonsterRepository.define('fungus', {
     behaviors: { fungalGrowth: Game.Behaviors.fungalGrowth }
 });
 
-Game.MonsterRepository.define('bat', {
+Game.MonsterFactory.define('bat', {
     name: 'bat',
     character: 'B',
     foreground: '#431',     // dark brown
@@ -192,7 +192,7 @@ Game.MonsterRepository.define('bat', {
     behaviors: { wanderer: Game.Behaviors.wanderer }
 });
 
-Game.MonsterRepository.define('newt', {
+Game.MonsterFactory.define('newt', {
     name: 'newt',
     character: 'n',
     foreground: 'yellow',

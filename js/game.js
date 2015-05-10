@@ -26,7 +26,7 @@ var Game = {
     windowWidth: 800,
     windowHeight: 600,
     screenWidth: 40,
-    screenHeight: 30,
+    screenHeight: 24,
     msgScreenHeight: 10,
 
     // TODO: extra players, player creation routine
@@ -47,10 +47,10 @@ var Game = {
         this.displays.main = new ROT.Display({
                                         width: this.screenWidth,
                                         height: this.screenHeight,
-                                        fontSize: 12,
+                                        fontSize: 14,
                                         //fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
                                         forceSquareRatio: true,
-                                        spacing: 0.9
+                                        spacing: 1
                                         });
 
         this.displays.msg = new ROT.Display({
@@ -108,31 +108,43 @@ var Game = {
             return;
         }
 
-        // get a window width/height that is either 90% of what's available (if <800), or the average of 800 and what's available.
-        this.windowWidth = (window.innerWidth < 800) ? Math.floor(window.innerWidth * 0.90) : Math.floor((800 + window.innerWidth) / 2);
-        this.windowHeight = (window.innerHeight < 600) ? Math.floor(window.innerHeight * 0.90) : Math.floor((600 + window.innerHeight) / 2);
+        var availSize, availWidth, availHeight;
 
-        var availSize = this.displays.main.computeSize(this.windowWidth, this.windowHeight);  // returns [numCellsX, numCellsY]
+        // get a window width/height that is 800x600 (or whatever we've defined as windowWidth/Height,
+        // or 90% of what's available (if < windowWidth x windowHeight).
+        this.windowWidth = (window.innerWidth < this.windowWidth) ? Math.floor(window.innerWidth * 0.90) : this.windowWidth;
+        this.windowHeight = (window.innerHeight < this.windowHeight) ? Math.floor(window.innerHeight * 0.90) : this.windowHeight;
 
-        // make sure screen width/height are even
-        this.screenWidth = (availSize[0] % 2 === 0) ? availSize[0] : availSize[0] - 1;
-        this.screenHeight = availSize[1] - this.msgScreenHeight;
-        if (this.screenHeight % 2 !== 0) {
-            this.screenHeight -= 1;
+        availSize = this.displays.main.computeSize(this.windowWidth, this.windowHeight);  // returns [numCellsX, numCellsY]
+
+        // make sure width/height are even
+        availWidth = (availSize[0] % 2 === 0) ? availSize[0] : availSize[0] - 1;
+        availHeight = availSize[1] - this.msgScreenHeight;
+        if (availHeight % 2 !== 0) {
+            availHeight -= 1;
         }
+
+        // only change display if it needs changing
+        if (availWidth === this.screenWidth && availHeight === this.screenHeight) {
+            return false;
+        }
+
+        this.screenWidth = availWidth;
+        this.screenHeight = availHeight;
         this.displays.main.setOptions({width: this.screenWidth, height: this.screenHeight});
 
         // unfortunately, we have to do this separately for each display, since they may all be using
         // slightly different font sizes/options and therefore have different available sizes
-        var availSizeM = this.displays.msg.computeSize(this.windowWidth, this.windowHeight);
-        this.displays.msg.setOptions({width: availSizeM[0], height: this.msgScreenHeight});
+        availSize = this.displays.msg.computeSize(this.windowWidth, this.windowHeight);
+        this.displays.msg.setOptions({width: availSize[0], height: this.msgScreenHeight});
 
-        var availSizeH = this.displays.help.computeSize(this.windowWidth, this.windowHeight);
-        this.displays.help.setOptions({width: availSizeH[0], height: 1});
+        availSize = this.displays.help.computeSize(this.windowWidth, this.windowHeight);
+        this.displays.help.setOptions({width: availSize[0], height: 1});
 
-        var availSizeS = this.displays.stats.computeSize(this.windowWidth, this.windowHeight);
-        this.displays.stats.setOptions({ width: availSizeS[0], height: 1});
+        availSize = this.displays.stats.computeSize(this.windowWidth, this.windowHeight);
+        this.displays.stats.setOptions({ width: availSize[0], height: 1});
 
+        return true;
     },
 
     refresh: function() {
@@ -189,17 +201,21 @@ var Game = {
 
         // pick a new area in the world to start in
         var startingLocation = world.getRandomLandLocation();
-        var startingArea = world.addArea({  biome: startingLocation.biome,
+        var newArea = world.addArea({  biome: startingLocation.biome,
                                             parentX: startingLocation.x,
-                                            parentY: startingLocation.y  });
+                                            parentY: startingLocation.y,
+                                            dungeonChance: 100,
+                                            dungeonDepth: 3});
 
+        var startingArea = newArea.dungeon.levels[newArea.dungeonDepth];
         world.currentArea = startingArea;
 
         // add player to world
-        var x = startingArea.map.width / 2;
-        var y = startingArea.map.height / 2;
-
-        this.player.setLocation(x, y, startingArea);
+        var playerStartLoc;
+        while (!playerStartLoc) {
+            playerStartLoc = startingArea.map.findOpenArea(1);
+        }
+        this.player.setLocation(playerStartLoc.x, playerStartLoc.y, startingArea);
 
         // Start the current area engine
         startingArea.engine.start();

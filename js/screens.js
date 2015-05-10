@@ -28,7 +28,7 @@ Game.Screen.startScreen = {
         display.setOptions({
             width: logoSize.width + 2,
             height: logoSize.height + 10,
-            fontSize: 12,
+            fontSize: 13,
             forceSquareRatio: false,
             spacing: 1,
             fg: '#ccc',
@@ -89,8 +89,8 @@ Game.Screen.playScreen = {
             height: Game.screenHeight + 1,
             //fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
             fontSize: 14,
-            //forceSquareRatio: true,
-            spacing: 0.9
+            forceSquareRatio: true,
+            spacing: 1
         });
 
         Game.startNewGame();
@@ -107,27 +107,50 @@ Game.Screen.playScreen = {
             return;
         }
 
-        // re-set in case we just exited a subscreen
-        display.setOptions({
-            width: Game.screenWidth,
-            fontSize: 12,
-            //fontFamily: "Segoe UI Symbol",
-            //forceSquareRatio: true
-            spacing: 0.9
-        });
+        var player = Game.player;
+        var area = player.area;
 
         var screenWidth = Game.screenWidth;
         var screenHeight = Game.screenHeight;
-
-        var player = Game.player;
-        //var area = Game.currentWorld.currentArea;
-        var area = player.area;
 
         var mapWidth = area.width;
         var mapHeight = area.height;
 
         var playerX = player.x;
         var playerY = player.y;
+
+
+        var fontSize, spacing, forceSquare;
+        // set display options depending on current area
+        if (area.isOverworld()) {
+            fontSize = 11;
+            spacing = 0.9;
+            forceSquare = false;
+        }
+        else if (area.isWorldArea()) {
+            fontSize = 12;
+            spacing = 0.9;
+            forceSquare = true;
+        }
+        else {
+            fontSize = 13;
+            spacing = 1;
+            forceSquare = true;
+        }
+
+        display.setOptions({
+            width: screenWidth,
+            height: screenHeight + 1,
+            fontSize: fontSize,
+            //fontFamily: "Segoe UI Symbol",
+            forceSquareRatio: forceSquare,
+            spacing: spacing
+        });
+
+        if (Game.recalcDisplaySize()) {
+            Game.refresh();
+        }
+
 
         // Find all visible map cells based on FOV or previous visit
         var visibleCells = {};
@@ -216,7 +239,7 @@ Game.Screen.playScreen = {
         if (inputType === 'keydown') {
             var cmd = inputData.keyCode;
             var player = Game.player;
-            var area = Game.currentWorld.currentArea;
+
              // Movement
             if (cmd === ROT.VK_LEFT) {
                 this.move(-1, 0);
@@ -253,7 +276,7 @@ Game.Screen.playScreen = {
             // Unlock the engine
             //this.player.trackers.turnsTaken++;
             player.raiseEvent('onTurnTaken');
-            area.engine.unlock();
+            player.area.engine.unlock();
         }
     },
 
@@ -341,8 +364,13 @@ Game.Screen.playScreen = {
             // if no items, check for other functions
 
             // check for special tiles for area changes
+            /*
             if (player.changeAreas(x, y)) {
                 Game.refresh();
+            }
+            */
+            if (player.changeAreas(x,y)) {
+                Game.currentWorld.currentArea = player.area;
             }
         }
     },

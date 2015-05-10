@@ -17,7 +17,7 @@ Game.World = function(options) {
     options = options || {};
 
     // generate world data and overworld area
-    var mapSize = options.mapSize || 128;
+    var mapSize = options.mapSize || 256;
     mapSize = nearestPowerOf2(mapSize);
     this.mapSize = mapSize;
 
@@ -114,8 +114,8 @@ Game.World.prototype.generateOverworldArea = function(options) {
 Game.World.prototype.addArea = function(options) {
     options = options || {};
 
-    options.width = options['width'] || 64;
-    options.height = options['height'] || 64;
+    options.width = options['width'] || 32;
+    options.height = options['height'] || 32;
 
     // options should pass in a biome type
     // use this to get a generator and a tileset for the area
@@ -147,12 +147,13 @@ Game.World.prototype.addArea = function(options) {
     newArea.map.wrap = false;
 
     newArea.setupFov();
+    // newArea.populate(); -- not populated until visited
 
     // chance to add Dungeon
     var chance = options['dungeonChance'] || 100;
     var roll = randomPercent();
     if (roll <= chance) {
-        newArea.addDungeon();
+        newArea.addDungeon(options);
     }
 
     // add to the areas table

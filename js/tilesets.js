@@ -722,10 +722,10 @@ Game.Tilesets.cave = new Game.Tileset({});
 
 Game.Tilesets.tower = new Game.Tileset({
     floor: { character: '.', foreground: '#755', background: '#000' },
-    wall: { character: '#', foreground: '#533', background: '#644' },
-    blocked: { character: '▓', foreground: '#000', background: '#222' },
-    stairsUp: { character: '<', foreground: '#866' },
-    stairsDown: { character: '>', foreground: '#866' },
+    wall: { character: '#', foreground: '#533', background: '#644', isBreakable: false },
+    blocked: { character: '#', foreground: '#533', background: '#644', isBreakable: false },
+    stairsUp: { character: '<', foreground: '#577' },
+    stairsDown: { character: '>', foreground: '#577' },
     corridor: { character: '.', foreground: '#755' },
     closedDoor: { character: '+', foreground: '#577' },
     openDoor: { character: '/', foreground: '#577' },

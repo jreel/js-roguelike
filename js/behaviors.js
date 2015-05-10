@@ -35,9 +35,8 @@ Game.Behaviors = {
             return false;
         }
 
-        var newGrowth = Game.MonsterRepository.create(owner.name);
-        newGrowth.setLocation(xTarget, yTarget);
-        area.addEntity(newGrowth);
+        var newGrowth = Game.MonsterFactory.create(owner.name);
+        newGrowth.setLocation(xTarget, yTarget, area);
         owner.growthRemaining--;
 
         // alert nearby
@@ -135,9 +134,8 @@ Game.Behaviors = {
         }
 
         // create the slime
-        var slime = Game.MonsterRepository.create('slime');
-        slime.setLocation(xTarget, yTarget);
-        area.addEntity(slime);
+        var slime = Game.MonsterFactory.create('slime');
+        slime.setLocation(xTarget, yTarget, area);
 
         return true;
     }

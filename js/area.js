@@ -37,13 +37,14 @@ Game.Area = function (params) {
     this.scheduler = new ROT.Scheduler.Simple();
     this.engine = new ROT.Engine(this.scheduler);
 
-    this.lastVisit = null;                  // to simulate turns if player leaves & comes back later
+    this.lastVisit = 0;                  // to simulate turns if player leaves & comes back later
 
     this.entities = {};               // table to hold entities on this area, stored by position
     this.items = {};                     // table to hold items on this area
 
     this.parentLevel = {};
     this.subLevel = {};
+
 
 };
 
@@ -64,17 +65,15 @@ Game.Area.prototype.populate = function(population) {
     // set reasonable, pseudo-random defaults for population
     if (!population) {
         var mapArea = this.width * this.height;
-        var areaPerPop = ROT.RNG.getNormal(200, 50);
+        var areaPerPop = randomNormalInt(200, 50);
         population = Math.max(Math.round(mapArea / areaPerPop), 10);
     }
 
     // add random monsters for now
     // TODO: monster table based on area type
 
-    // make an array from our templates object
-    // var templates = Object.keys(Game.Templates.Monsters);
     for (var p = 0; p < population; p++) {
-        var monster = Game.MonsterRepository.createRandom();
+        var monster = Game.MonsterFactory.createRandom();
         this.placeEntityAtRandomPosition(monster);
         // level up the new entity automatically based on the area clevel
         if (monster.gainsExperience) {
@@ -85,16 +84,21 @@ Game.Area.prototype.populate = function(population) {
 
     }
 
-    // add random items (mainly food right now)
-    // average 1 item per every 2 monsters, with a std around 5.
-    // TODO: item table based on area type?
-    var itemStd = randomNormalInt(5, 1);
-    var itemPop = randomNormalInt(Math.floor(population / 2), itemStd);
-    for (var i = 0; i < itemPop; i++) {
-        var item = Game.ItemRepository.createRandom();
-        this.addItemAtRandomPosition(item);
+};
+Game.Area.prototype.scatterItems = function(amount) {
+
+    // set reasonable, pseudo-random defaults for amount
+    if (!amount) {
+        var mapArea = this.width * this.height;
+        var areaPerItem = 2 * randomNormalInt(200, 50);
+        amount = Math.max(Math.round(mapArea / areaPerItem, 5));
     }
 
+    var itemPop = randomNormalInt(amount, 1);
+    for (var i = 0; i < itemPop; i++) {
+        var item = Game.ItemFactory.createRandom();
+        this.addItemAtRandomPosition(item);
+    }
 };
 
 Game.Area.prototype.setupFov = function() {
@@ -109,7 +113,12 @@ Game.Area.prototype.addDungeon = function(options) {
     options = options || {};
 
     var depth = options['dungeonDepth'] || randomInt(3, 4);
-    var dungeonLoc = this.map.getRandomFloorPosition();
+
+    var dungeonLoc;
+    while (!dungeonLoc) {
+        dungeonLoc = this.map.findOpenArea(2);    // gives {x, y}
+    }
+
     this.dungeon = new Game.Dungeon({
         parentArea: this,
         parentX: dungeonLoc.x,
@@ -127,7 +136,10 @@ Game.Area.prototype.addDungeon = function(options) {
     firstLevel.parentLevel.area = this;
 
     // make stairs up from the first dungeon level
-    var stairsLoc = firstLevel.map.getRandomFloorPosition();
+    var stairsLoc;
+    while (!stairsLoc) {
+        stairsLoc = firstLevel.map.findOpenArea(2);
+    }
     firstLevel.map.grid[stairsLoc.x][stairsLoc.y] = firstLevel.map.tileset.stairsUp;
 
     this.subLevel.x = stairsLoc.x;
@@ -283,8 +295,11 @@ Game.Area.prototype.updateEntityLocation = function(entity, newX, newY, newArea)
             delete oldArea.entities[oldKey];
         }
         newArea.entities[newKey] = entity;
+        entity.x = newX;
+        entity.y = newY;
 
-    } else {
+    }
+    else {
 
         if (oldArea) {
             // remove from current area first;
@@ -315,7 +330,8 @@ Game.Area.prototype.setItemsAt = function(x, y, items) {
         if (this.items[key]) {
             delete this.items[key];
         }
-    } else {
+    }
+    else {
         // otherwise, simply update the items at that key
         this.items[key] = items;
     }
@@ -327,12 +343,13 @@ Game.Area.prototype.addItem = function(x, y, item) {
     var key = x + ',' + y;
     if (this.items[key]) {
         this.items[key].push(item);
-    } else {
+    }
+    else {
         this.items[key] = [item];
     }
 };
 
 Game.Area.prototype.addItemAtRandomPosition = function(item) {
-    var position = this.map.getRandomFloorPosition(this);
+    var position = this.map.getRandomFloorPosition();
     this.addItem(position.x, position.y, item);
 };
