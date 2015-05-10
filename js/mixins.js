@@ -30,7 +30,6 @@
 // subroutine in the Game.DynamicGlyph constructor, which every other
 // class *should* be an instance of somewhere down the inheritance chain.
 
-// TODO: does this get moved to repository system as well?
 Game.Mixins = { };
 
 Game.Mixins.movable = {
@@ -54,7 +53,14 @@ Game.Mixins.movable = {
                 return false;
             }
 
-        } else if (this === Game.player) {
+        }
+        else if (tile == area.map.tileset.closedDoor) {
+            // TODO: mixins to allow opening doors
+            area.map.grid[x][y] = area.map.tileset.openDoor;
+            return true;
+
+        }
+        else if (this === Game.player) {
 
             // this will check for all the contingencies
             // such as walkable, breakable, etc.
@@ -74,13 +80,15 @@ Game.Mixins.movable = {
                 return false;
             }
 
-        } else if (tile.isWalkable) {
+        }
+        else if (tile.isWalkable) {
             // we're not the player, but we can still walk
             // onto the tile
             this.setLocation(x, y);
             return true;
 
-        } else {
+        }
+        else {
             // we're not the player, and the tile isn't walkable;
             // not much we can do here.
             return false;
@@ -423,7 +431,7 @@ Game.Mixins.foodEater = {
     init: function(template) {
         this.maxFullness = template['maxFullness'] || 1000;
         this.fullness = template['fullness'] || (this.maxFullness) / 2;
-        this.hungerRate = template['hungerRate']; //|| 1;
+        this.hungerRate = template['hungerRate'] || 1;
     },
     addHunger: function(amount) {
         if (!this.eatsFood) { return; }
@@ -498,7 +506,7 @@ Game.Mixins.corpseDropper = {
             if (ROT.RNG.getPercentage() <= this.corpseDropChance) {
                 // create a new corpse item and drop it
                 var deadThing = this;
-                var corpse = Game.ItemRepository.create('corpse',
+                var corpse = Game.ItemFactory.create('corpse',
                     {
                         name: deadThing.name + ' corpse',
                         foreground: deadThing.foreground

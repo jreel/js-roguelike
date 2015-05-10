@@ -142,9 +142,60 @@ Game.Map.prototype.getTilesWithinRadius = function(centerX, centerY, radius) {
     return results.randomize();
 };
 
+Game.Map.prototype.searchInDirection = function(startX, startY, dir, tile, maxDistance) {
+    // starting at (startX, startY), search in dir until we reach tile
+    // return tile (x, y)
+
+    maxDistance = maxDistance || Math.max(this.width, this.height);
+
+    var dx = 0, dy = 0;
+
+    if (dir === 0 || dir === 'N' || dir === 'n') {
+        dy = -1;
+    } else if (dir === 1 || dir === 'E' || dir === 'e') {
+        dx = 1;
+    } else if (dir === 2 || dir === 'S' || dir === 's') {
+        dy = 1;
+    } else if (dir === 3 || dir === 'W' || dir === 'w') {
+        dx = -1;
+    }
+
+    var x = startX + dx, y = startY + dy;
+    var distance = 1;
+    var foundTile;
+    while (!foundTile && distance <= maxDistance) {
+        if (x < 0 || y < 0 || x >= this.width || y >= this.height) {
+            break;
+        }
+        if (this.getTile(x, y) === tile) {
+            foundTile = {};
+            foundTile.x = x;
+            foundTile.y = y;
+            break;
+        }
+        x += dx;
+        y += dy;
+        distance++;
+    }
+
+    return foundTile;
+};
+
 Game.Map.prototype.isAdjacent = function(x, y, tile) {
+
+    var neighbors = this.getNeighborTiles(x, y);
+    var len = neighbors.length;
+    for (var i = 0; i < len; i++) {
+        if (neighbors[i] === tile) {
+            return true;
+        }
+    }
+    return false;
+
+    /*
     return (this.getTile(x - 1, y) === tile || this.getTile(x + 1, y) === tile ||
             this.getTile(x, y - 1) === tile || this.getTile(x, y + 1) === tile);
+    */
 };
 
 // check whether a rectangular region is entirely tiled with 'tile'
@@ -158,8 +209,8 @@ Game.Map.prototype.isAreaTiled = function(xStart, yStart, xEnd, yEnd, tile) {
     if ((xStart > xEnd) || (yStart > yEnd)) {
         return false;
     }
-    for (var y = yStart; y !== yEnd + 1; ++y) {
-        for (var x = xStart; x !== xEnd + 1; ++x) {
+    for (var x = xStart; x <= xEnd; x++) {
+        for (var y = yStart; y <= yEnd; y++) {
             if (this.getTile(x, y) !== tile) {
                 return false;
             }
@@ -238,7 +289,6 @@ Game.Map.prototype.fillRegion = function(region, x, y, masterArray) {
 
 Game.Map.prototype.isEmptyFloor = function(x, y) {
     // Check if the tile is floor and unoccupied
-    // TODO: replace Game.Tile ref with tileset ref
     return this.getTile(x, y).isWalkable && !this.area.getEntityAt(x, y);
 };
 
@@ -250,6 +300,37 @@ Game.Map.prototype.getRandomFloorPosition = function() {
         y = Math.floor(Math.random() * this.height);
     } while (!this.isEmptyFloor(x, y));
     return {x: x, y: y};
+};
+
+Game.Map.prototype.findOpenArea = function(radius, startPos) {
+    // return the center of a random open area of given radius
+    // optional startPos = {x, y} to start looking
+    var sanityCheck = 1000;
+    var found = false;
+
+    var trial, xStart, xEnd, yStart, yEnd, d = 0;
+    do {
+        trial = startPos || this.getRandomFloorPosition();
+        xStart = trial.x - radius;
+        xEnd = trial.x + radius;
+        yStart = trial.y - radius;
+        yEnd = trial.y + radius;
+
+        if (this.isAreaTiled(xStart, yStart, xEnd, yEnd, this.tileset.floor)) {
+            found = true;
+            return { x: trial.x, y: trial.y };
+        }
+
+        if (startPos) {
+            d++;
+            startPos.x += randomInt(-d, d);
+            startPos.y += randomInt(-d, d);
+        }
+
+        sanityCheck--;
+    } while (!found && sanityCheck > 0);
+    return false;
+
 };
 
 // Map-changing abilities

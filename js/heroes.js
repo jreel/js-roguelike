@@ -31,7 +31,7 @@ Game.HeroTemplates = {
             sightRadius: 5
         },
         holdsInventory: {
-            inventorySlots: 22
+            inventorySlots: 25
         }
     }
 };

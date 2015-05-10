@@ -46,12 +46,12 @@ Game.Dungeon.prototype.generateLevel = function(mapWidth, mapHeight, tileset) {
     // get the map from the generator and pass it to the Area constructor
     // return the area
 
-    mapWidth = mapWidth || 64;
-    mapHeight = mapHeight || 64;
-    tileset = tileset || Game.Tilesets.cave;
+    mapWidth = mapWidth || randomInt(30, 50);
+    mapHeight = mapHeight || randomInt(30, 50);
+    tileset = tileset || Game.Tilesets.tower;
 
-    var tiles = Game.Generators.generateCave(mapWidth, mapWidth, tileset);
-    var map  = new Game.Map(tiles, tileset);
+    var dungeon = new Game.FBdungeon(null, tileset, {width: mapWidth, height: mapHeight});
+    var map = dungeon.generate();
     var newLevel = new Game.Area({  width: mapWidth,
                                     height: mapHeight,
                                     tileset: tileset,
@@ -61,6 +61,7 @@ Game.Dungeon.prototype.generateLevel = function(mapWidth, mapHeight, tileset) {
 
     newLevel.map.area = newLevel;
     newLevel.setupFov();
+    //newLevel.populate(); -- not populated until visited
 
     return newLevel;
 };
@@ -86,8 +87,12 @@ Game.Dungeon.prototype.connectLevels = function() {
             nextLevel = this.levels[next];
 
             // make the stairs down on this level
-            stairsLoc = map.getRandomFloorPosition();    // gives {x, y}
-            map.grid[stairsLoc.x][stairsLoc.y] = map.tileset.stairsDown;
+            while (!stairsLoc) {
+                stairsLoc = map.findOpenArea(2);    // gives {x, y}
+                if (stairsLoc) {
+                    map.grid[stairsLoc.x][stairsLoc.y] = map.tileset.stairsDown;
+                }
+            }
 
             // set this level's subLevel = nextLevel
             currentLevel.subLevel.area = nextLevel;
@@ -99,6 +104,8 @@ Game.Dungeon.prototype.connectLevels = function() {
             nextLevel.parentLevel.y = stairsLoc.y;
             nextLevel.parentLevel.area = currentLevel;
 
+            // reset for next check
+            stairsLoc = null;
         }
 
         if (prev >= 1 && prev < this.numLevels) {
@@ -106,8 +113,12 @@ Game.Dungeon.prototype.connectLevels = function() {
             prevLevel = this.levels[prev];
 
             // make the stairs up on this level
-            stairsLoc = map.getRandomFloorPosition();    // gives {x, y}
-            map.grid[stairsLoc.x][stairsLoc.y] = map.tileset.stairsUp;
+            while (!stairsLoc) {
+                stairsLoc = map.findOpenArea(2);    // gives {x, y}
+                if (stairsLoc) {
+                    map.grid[stairsLoc.x][stairsLoc.y] = map.tileset.stairsUp;
+                }
+            }
 
             // set this level's parentLevel = prevLevel
             currentLevel.parentLevel.area = prevLevel;
@@ -118,8 +129,9 @@ Game.Dungeon.prototype.connectLevels = function() {
             prevLevel.subLevel.x = stairsLoc.x;
             prevLevel.subLevel.y = stairsLoc.y;
             prevLevel.subLevel.area = currentLevel;
-        }
 
+            stairsLoc = null;
+        }
 
     }
 };

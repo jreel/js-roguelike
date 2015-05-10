@@ -38,8 +38,8 @@ Game.Player = function(template) {
             inventorySlots: 22
         },
         foodEater: {
-            maxFullness: Number.MAX_VALUE,
-            hungerRate: 0
+            maxFullness: 2000,
+            hungerRate: 1
         },
         armorUser: true,
         weaponUser: true,
@@ -64,7 +64,7 @@ Game.Player.extend(Game.Entity);
 // TODO: party system
 Game.Player.prototype.act = function() {
     if (this.acting) {
-        return;
+        return false;
     }
     this.acting = true;
     // add turn hunger before checking player death
@@ -108,11 +108,17 @@ Game.Player.prototype.setLocation = function(x, y, area) {
         // if area has been visited before, simulate turns
         if (newArea.lastVisit) {
             var turnDiff = this.trackers.turnsTaken - newArea.lastVisit;
-            newArea.simulateTurns(turnDiff);
+            //newArea.simulateTurns(turnDiff);
 
-        } else {
+        }
+        else if (!newArea.isOverworld()) {
             // otherwise, populate the map for the first time
-            //newArea.populate();
+            newArea.populate();
+
+            // scatter items in dungeon areas
+            if (newArea.isSubArea()) {
+                newArea.scatterItems();
+            }
         }
 
         Game.currentWorld.currentArea = newArea;
@@ -227,12 +233,22 @@ Game.Player.prototype.changeAreas = function(x, y) {
                                         parentY: y   });
 
             newArea.engine.start();
+            // populate() is called by player.setLocation
         }
 
+        // try to set the player in the center of the new area
+        // ideally, in an open space close to the center
+        // if not, in a closed space at or close to the center
         newX = newArea.map.width / 2;
         newY = newArea.map.height / 2;
+        var newLoc = newArea.map.findOpenArea(1, {x: newX, y: newY});
 
-        player.setLocation(newX, newY, newArea);
+        if (newLoc) {
+            player.setLocation(newLoc.x, newLoc.y, newArea);
+        }
+        else {
+            player.setLocation(newX, newY, newArea);
+        }
         // setLocation handles simulating turns upon re-visiting an area
 
         return true;
