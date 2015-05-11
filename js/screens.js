@@ -113,13 +113,6 @@ Game.Screen.playScreen = {
         var screenWidth = Game.screenWidth;
         var screenHeight = Game.screenHeight;
 
-        var mapWidth = area.width;
-        var mapHeight = area.height;
-
-        var playerX = player.x;
-        var playerY = player.y;
-
-
         var fontSize, spacing, forceSquare;
         // set display options depending on current area
         if (area.isOverworld()) {
@@ -151,10 +144,147 @@ Game.Screen.playScreen = {
             Game.refresh();
         }
 
+        // render the map
+        this.renderMap(display);
+    },
+
+    handleInput: function(inputType, inputData) {
+        // TODO: mouse input
+        // if the game is over, player can press Enter to go to the losing screen.
+        if (Game.gameOver) {
+            if (inputType === 'keydown' && inputData.keyCode === ROT.VK_RETURN) {
+                Game.switchScreen(Game.Screen.loseScreen, 'main');
+            }
+            return;
+        }
+        // handle subscreen input if there is one
+        if (this.subScreen) {
+            this.subScreen.handleInput(inputType, inputData);
+            return;
+        }
+        if (inputType === 'keydown') {
+            var cmd = inputData.keyCode;
+            var player = Game.player;
+
+             // Movement
+            if (cmd === ROT.VK_LEFT) {
+                this.move(-1, 0);
+            }
+            else if (cmd === ROT.VK_RIGHT) {
+                this.move(1, 0);
+            }
+            else if (cmd === ROT.VK_UP) {
+                this.move(0, -1);
+            }
+            else if (cmd === ROT.VK_DOWN) {
+                this.move(0, 1);
+            }
+            else if (cmd === ROT.VK_I) {          // inventory screen
+                this.showItemsSubScreen(Game.Screen.inventoryScreen, player.inventory,
+                                            "You are not carrying anything.");
+                return;
+            }
+            else if (cmd === ROT.VK_D) {          // drop screen
+                this.showItemsSubScreen(Game.Screen.dropScreen, player.inventory,
+                                        "You have nothing to drop.");
+                return;
+            }
+            else if (cmd === ROT.VK_E) {      // eat screen
+                this.showItemsSubScreen(Game.Screen.eatScreen, player.inventory,
+                                        "You have nothing to eat.");
+                return;
+            }
+            else if (cmd === ROT.VK_W) {      // wear/wield screen
+                this.showItemsSubScreen(Game.Screen.equipScreen, player.inventory,
+                                        "You have nothing to wear or wield.");
+                return;
+            }
+            else if (cmd === ROT.VK_X) {      // examine screen
+                this.showItemsSubScreen(Game.Screen.examineScreen, player.inventory,
+                                        "You have nothing to examine.");
+                return;
+            }
+            else if (cmd === ROT.VK_L) {      // look screen
+                // setup the look screen
+                var offsets = this.getMapCoordinates(0, 0);
+                Game.Screen.lookScreen.setup(player, player.x, player.y, offsets.x, offsets.y);
+                this.setSubScreen(Game.Screen.lookScreen);
+                return;
+            }
+            else if (cmd === ROT.VK_H) {      // help screen
+                this.setSubScreen(Game.Screen.helpScreen);
+                return;
+            }
+            else if (cmd === ROT.VK_SPACE) {
+                this.activateTile();
+            }
+            else {
+                // not a valid key
+                return;
+            }
+            // Unlock the engine
+            //this.player.trackers.turnsTaken++;
+            player.raiseEvent('onTurnTaken');
+            player.area.engine.unlock();
+        }
+    },
+
+    getMapCoordinates: function(screenX, screenY) {
+        // takes ScreenX, ScreenY coordinates and
+        // returns correct mapX, mapY coordinates
+        var playerX = Game.player.x;
+        var playerY = Game.player.y;
+        var area = Game.currentWorld.currentArea;
+        var mapWidth = area.map.width;
+        var mapHeight = area.map.height;
+        var screenWidth = Game.screenWidth;
+        var screenHeight = Game.screenHeight;
+
+        var mapLeftBound, mapTopBound, mapX, mapY;
+
+        // wrap the x-coordinates if needed
+        if (area.map.wrap) {
+            // find the left bound (screenX = 0) of the rendered map,
+            // based on player map position
+            mapLeftBound = playerX - (screenWidth / 2);
+            // adjust if needed
+            if (mapLeftBound < 0) {
+                mapLeftBound += mapWidth;
+            }
+            mapX = mapLeftBound + screenX;
+            if (mapX >= mapWidth) {
+                mapX %= mapWidth;
+            }
+        } else {
+            mapLeftBound = Math.max(0, playerX - (screenWidth / 2));
+            mapLeftBound = Math.min(mapLeftBound, Math.abs(mapWidth - screenWidth));
+            mapX = mapLeftBound + screenX;
+        }
+
+        // we don't wrap the y-coordinates in any case
+        mapTopBound = Math.max(0, playerY - (screenHeight / 2));
+        mapTopBound = Math.min(mapTopBound, Math.abs(mapHeight - screenHeight));
+        mapY = mapTopBound + screenY;
+
+        return {x: mapX, y: mapY};
+    },
+
+    renderMap: function(display) {
+        var player = Game.player;
+        var area = player.area;
+        var map = area.map;
+
+        var screenWidth = Game.screenWidth;
+        var screenHeight = Game.screenHeight;
+
+        var mapWidth = area.width;
+        var mapHeight = area.height;
+
+        var playerX = player.x;
+        var playerY = player.y
 
         // Find all visible map cells based on FOV or previous visit
         var visibleCells = {};
-        var map = area.map;
         var sightRadius = player.sightRadius * area.sightRadiusMultiplier;
         area.fov.compute(
             playerX, playerY, sightRadius,
@@ -171,7 +301,7 @@ Game.Screen.playScreen = {
         //  wrapping the map if needed)
         var topLeft = this.getMapCoordinates(0, 0);
 
-         // Render visible and explored map cells
+        // Render visible and explored map cells
         var x, y, sx, sy;
         for (sx = 0, x = topLeft.x; sx < screenWidth; sx++, x++) {
             for (sy = 0, y = topLeft.y; sy < screenHeight; sy++, y++) {
@@ -221,105 +351,6 @@ Game.Screen.playScreen = {
                 }
             }
         }
-
-    },
-
-    handleInput: function(inputType, inputData) {
-        // TODO: mouse input
-        // if the game is over, player can press Enter to go to the losing screen.
-        if (Game.gameOver) {
-            if (inputType === 'keydown' && inputData.keyCode === ROT.VK_RETURN) {
-                Game.switchScreen(Game.Screen.loseScreen, 'main');
-            }
-            return;
-        }
-        // handle subscreen input if there is one
-        if (this.subScreen) {
-            this.subScreen.handleInput(inputType, inputData);
-            return;
-        }
-        if (inputType === 'keydown') {
-            var cmd = inputData.keyCode;
-            var player = Game.player;
-
-             // Movement
-            if (cmd === ROT.VK_LEFT) {
-                this.move(-1, 0);
-            } else if (cmd === ROT.VK_RIGHT) {
-                this.move(1, 0);
-            } else if (cmd === ROT.VK_UP) {
-                this.move(0, -1);
-            } else if (cmd === ROT.VK_DOWN) {
-                this.move(0, 1);
-            } else if (cmd === ROT.VK_I) {          // inventory screen
-                this.showItemsSubScreen(Game.Screen.inventoryScreen, player.inventory,
-                                            "You are not carrying anything.");
-                return;
-            } else if (cmd === ROT.VK_D) {          // drop screen
-                this.showItemsSubScreen(Game.Screen.dropScreen, player.inventory,
-                                        "You have nothing to drop.");
-                return;
-            } else if (cmd === ROT.VK_E) {      // eat screen
-                this.showItemsSubScreen(Game.Screen.eatScreen, player.inventory,
-                                        "You have nothing to eat."
-                );
-                return;
-            } else if (cmd === ROT.VK_W) {      // wear/wield screen
-                this.showItemsSubScreen(Game.Screen.equipScreen, player.inventory,
-                                        "You have nothing to wear or wield."
-                );
-                return;
-            } else if (cmd === ROT.VK_SPACE) {
-                this.activateTile();
-            } else {
-                // not a valid key
-                return;
-            }
-            // Unlock the engine
-            //this.player.trackers.turnsTaken++;
-            player.raiseEvent('onTurnTaken');
-            player.area.engine.unlock();
-        }
-    },
-
-    getMapCoordinates: function(screenX, screenY) {
-        // takes ScreenX, ScreenY coordinates and
-        // returns correct mapX, mapY coordinates
-        var playerX = Game.player.x;
-        var playerY = Game.player.y;
-        var area = Game.currentWorld.currentArea;
-        var mapWidth = area.map.width;
-        var mapHeight = area.map.height;
-        var screenWidth = Game.screenWidth;
-        var screenHeight = Game.screenHeight;
-
-        var mapLeftBound, mapTopBound, mapX, mapY;
-
-        // wrap the x-coordinates if needed
-        if (area.map.wrap) {
-            // find the left bound (screenX = 0) of the rendered map,
-            // based on player map position
-            mapLeftBound = playerX - (screenWidth / 2);
-            // adjust if needed
-            if (mapLeftBound < 0) {
-                mapLeftBound += mapWidth;
-            }
-            mapX = mapLeftBound + screenX;
-            if (mapX >= mapWidth) {
-                mapX %= mapWidth;
-            }
-        } else {
-            mapLeftBound = Math.max(0, playerX - (screenWidth / 2));
-            mapLeftBound = Math.min(mapLeftBound, Math.abs(mapWidth - screenWidth));
-            mapX = mapLeftBound + screenX;
-        }
-
-        // we don't wrap the y-coordinates in any case
-        mapTopBound = Math.max(0, playerY - (screenHeight / 2));
-        mapTopBound = Math.min(mapTopBound, Math.abs(mapHeight - screenHeight));
-        mapY = mapTopBound + screenY;
-
-        return {x: mapX, y: mapY};
     },
 
     move: function(dX, dY) {
@@ -723,7 +754,8 @@ Game.Screen.ItemListScreen.prototype.setup = function(player, items) {
         if (that.filterFunction(item)) {
             count++;
             return item;
-        } else {
+        }
+        else {
             return null;
         }
     });
@@ -758,9 +790,11 @@ Game.Screen.ItemListScreen.prototype.render = function(display) {
             var suffix;
             if (this.items[i] === this.player.armor) {
                 suffix = ' (wearing)';
-            } else if (this.items[i] === this.player.weapon) {
+            }
+            else if (this.items[i] === this.player.weapon) {
                 suffix = ' (wielding)';
-            } else {
+            }
+            else {
                 suffix = '';
             }
             // render at the correct row and add 3 (title + blank line).
@@ -802,13 +836,15 @@ Game.Screen.ItemListScreen.prototype.handleInput = function(inputType, inputData
              (!this.canSelect || Object.keys(this.selectedIndices).length === 0))) {
             // TODO: separate display?
             Game.Screen.playScreen.setSubScreen(undefined);
+        }
 
         // handle pressing return when items are selected
-        } else if (keyCode === ROT.VK_RETURN) {
+        else if (keyCode === ROT.VK_RETURN) {
             this.executeOkFunction();
+        }
 
         // handle pressing a letter if we can select an item
-       } else if (this.canSelect && keyCode >= ROT.VK_A && keyCode <= ROT.VK_Z) {
+        else if (this.canSelect && keyCode >= ROT.VK_A && keyCode <= ROT.VK_Z) {
             // check if it maps to a valid item by subtracting 'a' from
             // the keyCode to know what letter of the alphabet was pressed
             var index = keyCode - ROT.VK_A;
@@ -819,19 +855,22 @@ Game.Screen.ItemListScreen.prototype.handleInput = function(inputType, inputData
                 if (this.canSelectMultiple) {
                     if (this.selectedIndices[index]) {
                         delete this.selectedIndices[index];
-                    } else {
+                    }
+                    else {
                         this.selectedIndices[index] =  true;
                     }
                     // redraw screen
                     Game.refresh();
-                } else {
+                }
+                else {
                     this.selectedIndices[index] = true;
                     this.executeOkFunction();
                 }
             }
+        }
 
         // if space is pressed, select all
-        } else if (this.canSelectMultiple && keyCode === ROT.VK_SPACE) {
+        else if (this.canSelectMultiple && keyCode === ROT.VK_SPACE) {
             for (var i in this.items) {
                 if (this.items.hasOwnProperty(i)) {
                     this.selectedIndices[i]= true;
@@ -878,13 +917,15 @@ Game.Screen.pickupScreen = new Game.Screen.ItemListScreen({
             if (cmd === ROT.VK_ESCAPE ||
                 (cmd === ROT.VK_RETURN && Object.keys(this.selectedIndices).length === 0)) {
                 Game.Screen.playScreen.setSubScreen(undefined);
+            }
 
             // handle pressing return when items are selected
-            } else if (cmd === ROT.VK_RETURN) {
+            else if (cmd === ROT.VK_RETURN) {
                 this.executeOkFunction();
+            }
 
             // handle pressing a letter to toggle selection of an item
-            } else if (cmd >= ROT.VK_A && cmd <= ROT.VK_Z) {
+            else if (cmd >= ROT.VK_A && cmd <= ROT.VK_Z) {
                 // check if it maps to a valid item by subtracting 'a' from
                 // the keyCode to know what letter of the alphabet was pressed
                 var index = cmd - ROT.VK_A;
@@ -892,15 +933,17 @@ Game.Screen.pickupScreen = new Game.Screen.ItemListScreen({
                     // toggle the selected status
                     if (this.selectedIndices[index]) {
                         delete this.selectedIndices[index];
-                    } else {
+                    }
+                    else {
                         this.selectedIndices[index] = true;
                     }
                     // redraw screen
                     Game.refresh();
                 }
+            }
 
             // if space is pressed, select all
-            } else if (cmd === ROT.VK_SPACE) {
+            else if (cmd === ROT.VK_SPACE) {
                 for (var i in this.items) {
                     if (this.items.hasOwnProperty(i)) {
                         this.selectedIndices[i] = true;
@@ -929,9 +972,10 @@ Game.Screen.dropScreen = new Game.Screen.ItemListScreen({
             // if escape, close the screen
             if (keyCode === ROT.VK_ESCAPE) {
                 Game.Screen.playScreen.setSubScreen(undefined);
+            }
 
             // handle pressing a letter to select an item
-            } else if (keyCode >= ROT.VK_A && keyCode <= ROT.VK_Z) {
+            else if (keyCode >= ROT.VK_A && keyCode <= ROT.VK_Z) {
                 // check if keypress maps to a valid item by subtracting 'a' from
                 // the keyCode to know what letter of the alphabet was pressed
                 var index = keyCode - ROT.VK_A;
@@ -959,9 +1003,11 @@ Game.Screen.eatScreen = new Game.Screen.ItemListScreen({
         var item = selectedItems[key];
         if (item.remainingPortions < item.maxPortions && item.remainingPortions === 1) {
             Game.sendMessage('default', this.player, "You finish off the %s.", item.name);
-        } else if (item.remainingPortions > 1) {
+        }
+        else if (item.remainingPortions > 1) {
             Game.sendMessage('default', this.player, "You eat some of the %s.", item.name);
-        } else {
+        }
+        else {
             Game.sendMessage('default', this.player, "You eat the %s.", item.name);
         }
         item.eat(this.player);
@@ -977,9 +1023,10 @@ Game.Screen.eatScreen = new Game.Screen.ItemListScreen({
             // if escape, close the screen
             if (keyCode === ROT.VK_ESCAPE) {
                 Game.Screen.playScreen.setSubScreen(undefined);
+            }
 
             // handle pressing a letter to select an item
-            } else if (keyCode >= ROT.VK_A && keyCode <= ROT.VK_Z) {
+            else if (keyCode >= ROT.VK_A && keyCode <= ROT.VK_Z) {
                 // check if keypress maps to a valid item by subtracting 'a' from
                 // the keyCode to know what letter of the alphabet was pressed
                 var index = keyCode - ROT.VK_A;
@@ -1009,16 +1056,19 @@ Game.Screen.equipScreen = new Game.Screen.ItemListScreen({
         if (item === this.player.armor) {
             Game.sendMessage('warning', this.player, "You remove your %s.", item.name);
             this.player.takeOff();
-        } else if (item === this.player.weapon) {
+        }
+        else if (item === this.player.weapon) {
             Game.sendMessage('warning', this.player, "You put away your %s.", item.name);
             this.player.unwield();
+        }
 
         // otherwise, check the type of item, and equip it
-        } else if (item.isWearable) {
+        else if (item.isWearable) {
             this.player.unequip(item);
             this.player.wear(item);
             Game.sendMessage('default', this.player, "You are wearing %s.", item.describeA());
-        } else if (item.isWieldable) {
+        }
+        else if (item.isWieldable) {
             this.player.unequip(item);
             this.player.wield(item);
             Game.sendMessage('default', this.player, "You are wielding %s.", item.describeA());
@@ -1032,9 +1082,10 @@ Game.Screen.equipScreen = new Game.Screen.ItemListScreen({
             // if escape, close the screen
             if (keyCode === ROT.VK_ESCAPE) {
                 Game.Screen.playScreen.setSubScreen(undefined);
+            }
 
             // handle pressing a letter to select an item
-            } else if (keyCode >= ROT.VK_A && keyCode <= ROT.VK_Z) {
+            else if (keyCode >= ROT.VK_A && keyCode <= ROT.VK_Z) {
                 // check if keypress maps to a valid item by subtracting 'a' from
                 // the keyCode to know what letter of the alphabet was pressed
                 var index = keyCode - ROT.VK_A;
@@ -1048,3 +1099,239 @@ Game.Screen.equipScreen = new Game.Screen.ItemListScreen({
     }
 });
 
+Game.Screen.examineScreen = new Game.Screen.ItemListScreen({
+    title: 'Choose the item you wish to examine:',
+    caption: '(letter key to select item, [Esc] to cancel)',
+    canSelect: true,
+    canSelectMultiple: false,
+    filter: function(item) {
+        return item;
+    },
+    ok: function(selectedItems) {
+        var keys = Object.keys(selectedItems);
+        if (keys.length > 0) {
+            var item = selectedItems[keys[0]];
+            Game.sendMessage('info', this.player, "It's %s (%s).", item.describeA(), item.getDetails());
+        }
+        return true;
+    },
+    handleInput: function(inputType, inputData) {
+        if (inputType === 'keydown') {
+            var keyCode = inputData.keyCode;
+
+            // if escape, close the screen
+            if (keyCode === ROT.VK_ESCAPE) {
+                Game.Screen.playScreen.setSubScreen(undefined);
+            }
+
+            // handle pressing a letter to select an item
+            else if (keyCode >= ROT.VK_A && keyCode <= ROT.VK_Z) {
+                // check if keypress maps to a valid item by subtracting 'a' from
+                // the keyCode to know what letter of the alphabet was pressed
+                var index = keyCode - ROT.VK_A;
+                if (this.items[index]) {
+                    // select the item and exit screen
+                    this.selectedIndices[index] = true;
+                    this.executeOkFunction();
+                }
+            }
+        }
+    }
+
+});
+
+Game.Screen.TargetingScreen = function(template) {
+    template = template || {};
+    // by default, the ok function does nothing, and doesn't consume a turn.
+    this.okFunction = template['ok'] || function(x, y) { return false; };
+    // the default caption function simply returns an empty string.
+    this.captionFunction = template['caption'] || function(x, y) { return ''; };
+};
+
+Game.Screen.TargetingScreen.prototype.setup = function(player, startX, startY, offsetX, offsetY) {
+    this.player = player;
+    this.area = player.area;
+    // store original position, subtract the offset
+    this.startX = startX - offsetX;
+    this.startY = startY - offsetY;
+    // store current cursor position
+    this.cursorX = this.startX;
+    this.cursorY = this.startY;
+    // store map offsets
+    this.offsetX = offsetX;
+    this.offsetY = offsetY;
+    // cache the fov
+    var visibleCells = {};
+    this.area.fov.compute(this.player.x, this.player.y,
+                            this.player.sightRadius * this.area.sightRadiusMultiplier,
+                            function(x, y, radius, visibility) {
+                                visibleCells[x + ',' + y] = true;
+                            });
+    this.visibleCells = visibleCells;
+};
+
+Game.Screen.TargetingScreen.prototype.render = function(display) {
+    // render the usual playscreen map
+    Game.Screen.playScreen.renderMap.call(Game.Screen.playScreen, display);
+
+    // draw a line from the start to the cursor
+    var points = Game.Geometry.getLine(this.startX, this.startY, this.cursorX, this.cursorY);
+    var map = this.area.map;
+    // highlight cells along the line
+    var p, mapX, mapY, entity, items, tile, char, fg, bg;
+    for (var i = 0, len = points.length; i < len; i++) {
+        p = points[i];
+        mapX = p.x + this.offsetX;
+        mapY = p.y + this.offsetY;
+        bg = '#f6f';
+
+        if (map.isExplored(mapX, mapY)) {
+            tile = map.getTile(mapX, mapY);
+            char = tile.character;
+            fg = tile.foreground;
+
+            if (this.visibleCells[mapX + ',' + mapY]) {
+                entity = this.area.getEntityAt(mapX, mapY);
+                items = this.area.getItemsAt(mapX, mapY);
+
+                if (items) {
+                    var item = items[items.length - 1];
+                    char = item.character;
+                    fg = item.foreground;
+                }
+                if (entity) {
+                    char = entity.character;
+                    fg = entity.foreground;
+                }
+            }
+        }
+        else {
+            char = Game.Tile.nullTile.character;
+            fg = Game.Tile.nullTile.foreground;
+        }
+        display.draw(p.x, p.y, char, fg, bg);
+    }
+
+    // render a caption at the bottom of the screen
+    display.drawText(0, Game.screenHeight - 1, this.captionFunction(this.cursorX + this.offsetX, this.cursorY + this.offsetY));
+};
+
+Game.Screen.TargetingScreen.prototype.handleInput = function(inputType, inputData) {
+    var cmd = inputData.keyCode;
+    // move the cursor
+    if (inputType == 'keydown') {
+        if (cmd === ROT.VK_LEFT) {
+            this.moveCursor(-1, 0);
+        }
+        else if (cmd === ROT.VK_RIGHT) {
+            this.moveCursor(1, 0);
+        }
+        else if (cmd === ROT.VK_UP) {
+            this.moveCursor(0, -1);
+        }
+        else if (cmd === ROT.VK_DOWN) {
+            this.moveCursor(0, 1);
+        }
+        else if (cmd === ROT.VK_ESCAPE) {
+            Game.Screen.playScreen.setSubScreen(undefined);
+        }
+        else if (cmd === ROT.VK_RETURN) {
+            this.executeOkFunction();
+        }
+    }
+    Game.refresh();
+};
+
+Game.Screen.TargetingScreen.prototype.moveCursor = function(dx, dy) {
+    // make sure we stay within bounds
+    // TODO: scrolling?
+    this.cursorX = Math.max(0, Math.min(this.cursorX + dx, Game.screenWidth));
+    this.cursorY = Math.max(0, Math.min(this.cursorY + dy, Game.screenHeight - 1));
+};
+
+Game.Screen.TargetingScreen.prototype.executeOkFunction = function() {
+    // switch back to the play screen
+    Game.Screen.playScreen.setSubScreen(undefined);
+    // call the ok function and end the player's turn if return true.
+    if (this.okFunction(this.cursorX + this.offsetX, this.cursorY + this.offsetY)) {
+        this.area.engine.unlock();
+    }
+};
+
+Game.Screen.lookScreen = new Game.Screen.TargetingScreen({
+    caption: function(x, y) {
+        var map = this.area.map;
+        // if the tile is explored, we can give a better caption
+        if (map.isExplored(x, y)) {
+            // if the cell is within fov, check for visible items or entities
+            if (this.visibleCells[x + ',' + y]) {
+                // tell us about any entities first
+                var entity = this.area.getEntityAt(x, y);
+                var items = this.area.getItemsAt(x, y);
+
+                if (entity) {
+                    return String.format('%s - %s (%s)',
+                                         entity.getGlyph(),
+                                         entity.describeA(true),
+                                         entity.getDetails());
+                }
+                else if (items) {
+                    var item = items[items.length - 1];
+                    return String.format('%s - %s (%s)',
+                                         item.getGlyph(),
+                                         item.describeA(true),
+                                         item.getDetails());
+                }
+            }
+            // if no entity/item, or the tile wasn't visible, then use the tile info
+            return String.format('%s - %s',
+                                 map.getTile(x, y).getGlyph(),
+                                 map.getTile(x, y).description);
+        }
+        // if the tile is not explored, show the null tile description
+        else {
+            return String.format('%s - %s',
+                                 Game.Tile.nullTile.getGlyph(),
+                                 Game.Tile.nullTile.description);
+        }
+    }
+});
+
+
+Game.Screen.helpScreen = {
+    render: function(display) {
+        display.setOptions({
+            fontSize: 16,
+            forceSquareRatio: false });
+        var availSize = display.computeSize(Game.windowWidth, Game.windowHeight);
+        display.setOptions({ width: availSize[0] });
+
+        var text   = 'Shattered Tower Help';
+        var border = '--------------------';
+        var y = 2;
+
+        var textSize = ROT.Text.measure(text);
+        var centerStart = (Game.screenWidth - textSize.width) / 2;
+        display.drawText(centerStart, y++, text);
+        display.drawText(centerStart, y++, border);
+        y++;
+        display.drawText(1, y++, '[⇦⇧⇩⇨] to move, attack, break blocks, open doors');
+        display.drawText(1, y++, '[Space] to pick up items, or change areas (such as stairs)');
+        display.drawText(1, y++, '[I] to view your Inventory');
+        display.drawText(1, y++, '[D] to Drop an item');
+        display.drawText(1, y++, '[W] to Wear or Wield an item');
+        display.drawText(1, y++, '[E] to Eat something');
+        display.drawText(1, y++, '[X] to eXamine an item');
+        display.drawText(1, y++, '[L] to Look around you');
+        display.drawText(1, y++, '[H] to show this Help screen');
+        y +=2;
+        text = '--- press any key to continue ---';
+        textSize = ROT.Text.measure(text);
+        centerStart = (Game.screenWidth - textSize.width) / 2;
+        display.drawText(centerStart, y++, text);
+    },
+
+    handleInput: function(inputType, inputData) {
+        Game.Screen.playScreen.setSubScreen(null);
+    }
+};

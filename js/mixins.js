@@ -137,6 +137,13 @@ Game.Mixins.destructible = {
         this.defense = template['baseDefenseValue'] || 0;
     },
     listeners: {
+        details: function() {
+            return [
+                {key: 'defense', value: this.getDefenseValue()},
+                {key: 'hp', value: this.hp}
+            ];
+        },
+
         onGainLevel: function() {
             // heal the entity
             this.setHp(this.maxHP);
@@ -222,6 +229,11 @@ Game.Mixins.attacker = {
     isAttacker: true,
     init: function(template) {
         this.attackValue = template['baseAttackValue'] || 1;
+    },
+    listeners: {
+        details: function() {
+            return [{key: 'attack', value: this.getAttackValue()}];
+        }
     },
     getAttackValue: function() {
         var modifier = 0;
@@ -565,6 +577,9 @@ Game.Mixins.experienceGainer = {
         }
     },
     listeners: {
+        details: function() {
+            return [{key: 'level', value: this.expLevel}];
+        },
         onKill: function(victim) {
             var exp = victim.maxHP + victim.getDefenseValue();
             if (victim.isAttacker) {
@@ -687,6 +702,11 @@ Game.Mixins.edible = {
         this.maxPortions = template['portions'] || 1;
         this.remainingPortions = this.maxPortions;
     },
+    listeners: {
+        details: function() {
+            return [{key: 'food', value: this.foodValue}];
+        }
+    },
     eat: function(eater) {
         if (eater.eatsFood) {
             if (this.remainingPortions > 0) {
@@ -718,6 +738,18 @@ Game.Mixins.equippable = {
         this.defenseValue = template['defenseValue'] || 0;
         this.isWieldable = template['isWieldable'] || false;
         this.isWearable = template['isWearable'] || false;
+    },
+    listeners: {
+        details: function() {
+            var results = [];
+            if (this.attackValue) {
+                results.push({key: 'attack', value: this.attackValue});
+            }
+            if (this.defenseValue) {
+                results.push({key: 'defense', value: this.defenseValue});
+            }
+            return results;
+        }
     }
 };
 

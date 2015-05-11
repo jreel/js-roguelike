@@ -78,10 +78,10 @@ Game.Generators.generateTerrain = function(width, height, tileset, percent, opti
 
     generator.create(function(x, y, v) {
         if (v === 0) {
-            grid[x][y] = tileset.floor;
+            grid[x][y] = tileset.ground;
         }
         else {
-            grid[x][y] = tileset.wall;
+            grid[x][y] = tileset.terrain;
         }
     }
     );

@@ -11,7 +11,7 @@
 // TODO: party system
 Game.Player = function(template) {
     var defaults = {
-        name: "hero",
+        name: "hero (you)",
         description: "This hero will surely save the day!",
         character: '@',
         foreground: '#fff',
