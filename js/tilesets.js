@@ -34,6 +34,24 @@ Game.Tileset = function(catalog) {
             passesLight: false
         },
 
+        ground: {
+            character: '.',
+            foreground: '#777',
+            background: '#000',
+            isWalkable: true,
+            isBreakable: false,
+            passesLight: true
+        },
+
+        terrain: {
+            character: '^',
+            foreground: '#777',
+            background: '#000',
+            isWalkable: false,
+            isBreakable: false,
+            passesLight: true
+        },
+
         blocked: {
             character: '▓',
             foreground: '#222',
@@ -726,7 +744,7 @@ Game.Tilesets.tower = new Game.Tileset({
     blocked: { character: '#', foreground: '#533', background: '#644', isBreakable: false },
     stairsUp: { character: '<', foreground: '#577' },
     stairsDown: { character: '>', foreground: '#577' },
-    corridor: { character: '.', foreground: '#755' },
+    corridor: { character: ',', foreground: '#755' },
     closedDoor: { character: '+', foreground: '#577' },
     openDoor: { character: '/', foreground: '#577' },
     secretDoor: { character: '#', foreground: '#533', background: '#644' },

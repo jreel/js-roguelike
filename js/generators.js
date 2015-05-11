@@ -63,7 +63,7 @@ Game.Generators.generateCave = function(width, height, tileset) {
     return grid;
 };
 
-Game.Generators.generateCellular = function(width, height, tileset, percent, options) {
+Game.Generators.generateTerrain = function(width, height, tileset, percent, options) {
     tileset = tileset || Game.Tilesets.forest;
     options = options || {};
 
@@ -72,7 +72,7 @@ Game.Generators.generateCellular = function(width, height, tileset, percent, opt
     for (var w = 0; w < width; w++) {
         grid[w] = new Array(height);
     }
-    // setup the cave generator
+    // setup the generator
     var generator = new ROT.Map.Cellular(width, height, { connected: true });
     generator.randomize(percent);
 
@@ -87,20 +87,20 @@ Game.Generators.generateCellular = function(width, height, tileset, percent, opt
     );
     return grid;
 };
-Game.Generators.generateThick = function(width, height, tileset) {
-    return Game.Generators.generateCellular(width, height, tileset, 0.55);
+Game.Generators.terrainThick = function(width, height, tileset) {
+    return Game.Generators.generateTerrain(width, height, tileset, 0.55);
 };
-Game.Generators.generateDense = function(width, height, tileset) {
-    return Game.Generators.generateCellular(width, height, tileset, 0.45);
+Game.Generators.terrainDense = function(width, height, tileset) {
+    return Game.Generators.generateTerrain(width, height, tileset, 0.45);
 };
-Game.Generators.generateSparse = function(width, height, tileset) {
-    return Game.Generators.generateCellular(width, height, tileset, 0.35);
+Game.Generators.terrainSparse = function(width, height, tileset) {
+    return Game.Generators.generateTerrain(width, height, tileset, 0.35);
 };
-Game.Generators.generateScattered = function(width, height, tileset) {
-    return Game.Generators.generateCellular(width, height, tileset, 0.25);
+Game.Generators.terrainScattered = function(width, height, tileset) {
+    return Game.Generators.generateTerrain(width, height, tileset, 0.25);
 };
-Game.Generators.generateOpen = function(width, height, tileset) {
-    return Game.Generators.generateCellular(width, height, tileset, 0.15);
+Game.Generators.terrainOpen = function(width, height, tileset) {
+    return Game.Generators.generateTerrain(width, height, tileset, 0.15);
 };
 
 

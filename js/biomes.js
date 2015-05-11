@@ -144,182 +144,182 @@ Game.BiomeArea = {
 
     POLAR_ICECAP: {
         tileset: Game.Tilesets.polar,
-        builder: Game.Generators.generateOpen,
+        builder: Game.Generators.terrainOpen,
         sightRadiusMultiplier: 2.5,
         hungerMultiplier: 1
     },
 
     GLACIER: {
         tileset: Game.Tilesets.glacier,
-        builder: Game.Generators.generateDense,
+        builder: Game.Generators.terrainDense,
         sightRadiusMultiplier: 1,
         hungerMultiplier: 1
     },
 
     DEEP_WATER: {
         tileset: Game.Tilesets.ocean,
-        builder: Game.Generators.generateOpen,
+        builder: Game.Generators.terrainOpen,
         sightRadiusMultiplier: 0.5,
         hungerMultiplier: 1
     },
 
     SHALLOW_WATER: {
         tileset: Game.Tilesets.ocean,
-        builder: Game.Generators.generateOpen,
+        builder: Game.Generators.terrainOpen,
         sightRadiusMultiplier: 1,
         hungerMultiplier: 1
     },
 
     SNOWCAP: {
         tileset: Game.Tilesets.snowcap,
-        builder: Game.Generators.generateSparse,
+        builder: Game.Generators.terrainSparse,
         sightRadiusMultiplier: 1.5,
         hungerMultiplier: 1
     },
 
     MOUNTAIN: {
         tileset: Game.Tilesets.rocky,
-        builder: Game.Generators.generateSparse,
+        builder: Game.Generators.terrainSparse,
         sightRadiusMultiplier: 1.5,
         hungerMultiplier: 1
     },
 
     BADLANDS: {
         tileset: Game.Tilesets.redrock,
-        builder: Game.Generators.generateScattered,
+        builder: Game.Generators.terrainScattered,
         sightRadiusMultiplier: 1,
         hungerMultiplier: 1
     },
 
     CRAG: {
         tileset: Game.Tilesets.rocky,
-        builder: Game.Generators.generateDense,
+        builder: Game.Generators.terrainDense,
         sightRadiusMultiplier: 1,
         hungerMultiplier: 1
     },
 
     COLD_BEACH: {
         tileset: Game.Tilesets.coldbeach,
-        builder: Game.Generators.generateOpen,
+        builder: Game.Generators.terrainOpen,
         sightRadiusMultiplier: 3,
         hungerMultiplier: 1
     },
 
     BEACH: {
         tileset: Game.Tilesets.beach,
-        builder: Game.Generators.generateOpen,
+        builder: Game.Generators.terrainOpen,
         sightRadiusMultiplier: 3,
         hungerMultiplier: 1
     },
 
     MARSHLAND: {
         tileset: Game.Tilesets.marsh,
-        builder: Game.Generators.generateDense,
+        builder: Game.Generators.terrainDense,
         sightRadiusMultiplier: 1,
         hungerMultiplier: 1
     },
 
     SWAMP: {
         tileset: Game.Tilesets.swamp,
-        builder: Game.Generators.generateThick,
+        builder: Game.Generators.terrainThick,
         sightRadiusMultiplier: 1,
         hungerMultiplier: 1
     },
 
     TUNDRA: {
         tileset: Game.Tilesets.tundra,
-        builder: Game.Generators.generateScattered,
+        builder: Game.Generators.terrainScattered,
         sightRadiusMultiplier: 3,
         hungerMultiplier: 1
     },
 
     BARRENS: {
         tileset: Game.Tilesets.coldbarrens,
-        builder: Game.Generators.generateOpen,
+        builder: Game.Generators.terrainOpen,
         sightRadiusMultiplier: 3,
         hungerMultiplier: 1
     },
 
     TAIGA: {
         tileset: Game.Tilesets.taiga,
-        builder: Game.Generators.generateDense,
+        builder: Game.Generators.terrainDense,
         sightRadiusMultiplier: 1,
         hungerMultiplier: 1
     },
 
     COLD_SCRUBLAND: {
         tileset: Game.Tilesets.coldscrub,
-        builder: Game.Generators.generateScattered,
+        builder: Game.Generators.terrainScattered,
         sightRadiusMultiplier: 2.5,
         hungerMultiplier: 1
     },
 
     COLD_DESERT: {
         tileset: Game.Tilesets.colddesert,
-        builder: Game.Generators.generateOpen,
+        builder: Game.Generators.terrainOpen,
         sightRadiusMultiplier: 3,
         hungerMultiplier: 1
     },
 
     CONIFEROUS_FOREST: {
         tileset: Game.Tilesets.rainforest,
-        builder: Game.Generators.generateThick,
+        builder: Game.Generators.terrainThick,
         sightRadiusMultiplier: 1,
         hungerMultiplier: 1
     },
 
     BROADLEAF_FOREST: {
         tileset: Game.Tilesets.forest,
-        builder: Game.Generators.generateDense,
+        builder: Game.Generators.terrainDense,
         sightRadiusMultiplier: 1,
         hungerMultiplier: 1
     },
 
     SHRUBLAND: {
         tileset: Game.Tilesets.shrub,
-        builder: Game.Generators.generateSparse,
+        builder: Game.Generators.terrainSparse,
         sightRadiusMultiplier: 1.5,
         hungerMultiplier: 1
     },
 
     GRASSLAND: {
         tileset: Game.Tilesets.plains,
-        builder: Game.Generators.generateOpen,
+        builder: Game.Generators.terrainOpen,
         sightRadiusMultiplier: 3,
         hungerMultiplier: 1
     },
 
     DUSTBOWL: {
         tileset: Game.Tilesets.dust,
-        builder: Game.Generators.generateOpen,
+        builder: Game.Generators.terrainOpen,
         sightRadiusMultiplier: 3,
         hungerMultiplier: 1
     },
 
     SCRUBLAND: {
         tileset: Game.Tilesets.scrub,
-        builder: Game.Generators.generateScattered,
+        builder: Game.Generators.terrainScattered,
         sightRadiusMultiplier: 2.5,
         hungerMultiplier: 1
     },
 
     DESERT: {
         tileset: Game.Tilesets.desert,
-        builder: Game.Generators.generateOpen,
+        builder: Game.Generators.terrainOpen,
         sightRadiusMultiplier: 3,
         hungerMultiplier: 1
     },
 
     JUNGLE: {
         tileset: Game.Tilesets.jungle,
-        builder: Game.Generators.generateThick,
+        builder: Game.Generators.terrainThick,
         sightRadiusMultiplier: 0.5,
         hungerMultiplier: 1
     },
 
     SAVANNA: {
         tileset: Game.Tilesets.savanna,
-        builder: Game.Generators.generateScattered,
+        builder: Game.Generators.terrainScattered,
         sightRadiusMultiplier: 2,
         hungerMultiplier: 1
     },

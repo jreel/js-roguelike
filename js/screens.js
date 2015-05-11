@@ -184,38 +184,40 @@ Game.Screen.playScreen = {
                 if (map.isExplored(x, y)) {
                     // fetch the glyph for the tile and render it
                     // to the screen at the offset position
-                    var glyph, fg, bg;
+                    var glyph, char, fg, bg;
                     // if we are at a cell within the fov, check if
                     // there are visible items or entities
                     if (visibleCells[x + ',' + y]) {
-                        // check for entities first, since they should
-                        // be drawn on top of items
+                        // render map tile first, then items, then entities
                         // TODO: refactor based on proper stacking order for future tile graphics
-                        if (area.getEntityAt(x, y)) {
-                            glyph = area.getEntityAt(x, y);
-                        } else if (area.getItemsAt(x, y)) {
-                            // if we have items, render the topmost one
+
+                        glyph = map.getTile(x, y);
+                        bg = glyph.background;          // get the map background
+
+                        if (area.getItemsAt(x, y)) {
+                            // if we have items, get the glyph of the topmost one
                             var items = area.getItemsAt(x, y);
                             glyph = items[items.length - 1];
-                        } else {
-                            glyph = map.getTile(x, y);
                         }
+                        if (area.getEntityAt(x, y)) {
+                            glyph = area.getEntityAt(x, y);
+                        }
+
+                        char = glyph.character;
                         fg = glyph.foreground;
-                        bg = glyph.background;
+                        // if the item or creature doesn't explicitly set its own background,
+                        // use the map background to render.
+                        bg = glyph.background || bg;
                     } else {
                         // tile was previously explored but is not currently
                         // within the fov; render it darker
                         // TODO: colors/params based on map type
                         glyph = map.getTile(x, y);
+                        char = glyph.character;
                         fg = glyph.darken().foreground;
                         bg = glyph.darken().background;
                     }
-                    display.draw(
-                        sx,
-                        sy,
-                        glyph.character,
-                        fg,
-                        bg);
+                    display.draw(sx, sy, char, fg, bg);
                 }
             }
         }
@@ -308,13 +310,13 @@ Game.Screen.playScreen = {
             }
         } else {
             mapLeftBound = Math.max(0, playerX - (screenWidth / 2));
-            mapLeftBound = Math.min(mapLeftBound, mapWidth - screenWidth);
+            mapLeftBound = Math.min(mapLeftBound, Math.abs(mapWidth - screenWidth));
             mapX = mapLeftBound + screenX;
         }
 
         // we don't wrap the y-coordinates in any case
         mapTopBound = Math.max(0, playerY - (screenHeight / 2));
-        mapTopBound = Math.min(mapTopBound, mapHeight - screenHeight);
+        mapTopBound = Math.min(mapTopBound, Math.abs(mapHeight - screenHeight));
         mapY = mapTopBound + screenY;
 
         return {x: mapX, y: mapY};

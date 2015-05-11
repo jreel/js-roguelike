@@ -8,8 +8,18 @@
  */
 
 /*
- DUNGEON: a collection of related and linked Areas.
+ DUNGEON: a collection of related and linked DungeonAreas.
  */
+
+Game.DungeonArea = function(options) {
+    var defaults = {};
+
+    options = applyDefaults(options, defaults);
+
+    // call the Area constructor with our options
+    Game.Area.call(this, options);
+};
+Game.DungeonArea.extend(Game.Area);
 
 Game.Dungeon = function(params) {
     var defaults = {
@@ -19,7 +29,7 @@ Game.Dungeon = function(params) {
         parentY: 0,
 
         numLevels: 1,
-        levels: {}              // a collection of Areas, in the form of level#: areaRef.
+        levels: {}              // a collection of DungeonAreas, in the form of level#: areaRef.
 
     };
 
@@ -35,11 +45,13 @@ Game.Dungeon = function(params) {
     }
 
     for (var j = 1; j <= this.numLevels; j++) {
-        this.levels[j] = this.generateLevel();      // returns Game.Area object
+        this.levels[j] = this.generateLevel();      // returns Game.DungeonArea object
         this.levels[j].id = j;
     }
     this.connectLevels();
 };
+
+
 
 Game.Dungeon.prototype.generateLevel = function(mapWidth, mapHeight, tileset) {
     // pick a random level type / generator
@@ -52,12 +64,13 @@ Game.Dungeon.prototype.generateLevel = function(mapWidth, mapHeight, tileset) {
 
     var dungeon = new Game.FBdungeon(null, tileset, {width: mapWidth, height: mapHeight});
     var map = dungeon.generate();
-    var newLevel = new Game.Area({  width: mapWidth,
-                                    height: mapHeight,
-                                    tileset: tileset,
-                                    map: map,
-                                    sightRadiusMultiplier: 1,
-                                    biome: "DUNGEON" });
+    var newLevel = new Game.DungeonArea({   width: mapWidth,
+                                            height: mapHeight,
+                                            tileset: tileset,
+                                            map: map,
+                                            sightRadiusMultiplier: 1,
+                                            biome: "DUNGEON",
+                                            rooms: dungeon.rooms });
 
     newLevel.map.area = newLevel;
     newLevel.setupFov();
@@ -71,14 +84,24 @@ Game.Dungeon.prototype.connectLevels = function() {
     // TODO: some voodoo to prevent stairs in a level from generating right beside each other
 
     var i, prev, next, prevLevel, nextLevel;
-    var currentLevel, map, stairsLoc;
-    var prevArea, nextArea;
+    var currentLevel, map, len;
+    var firstRoom, lastRoom;
+    var firstRoomCenterX, firstRoomCenterY, lastRoomCenterX, lastRoomCenterY;
     for (i = 1; i <= this.numLevels; i++) {
 
         prev = i - 1;      // valid values are 1 to this.numLevels - 1
         next = i + 1;      // valid values are 2 to this.numLevels
 
         currentLevel = this.levels[i];
+        len = currentLevel.rooms.length;
+        firstRoom = currentLevel.rooms[len - 2];
+        lastRoom = currentLevel.rooms[len - 1];
+
+        firstRoomCenterX = (firstRoom.xStart + firstRoom.xEnd) >> 1;
+        firstRoomCenterY = (firstRoom.yStart + firstRoom.yEnd) >> 1;
+
+        lastRoomCenterX = (lastRoom.xStart + lastRoom.xEnd) >> 1;
+        lastRoomCenterY = (lastRoom.yStart + lastRoom.yEnd) >> 1;
 
         map = currentLevel.map;
 
@@ -87,12 +110,7 @@ Game.Dungeon.prototype.connectLevels = function() {
             nextLevel = this.levels[next];
 
             // make the stairs down on this level
-            while (!stairsLoc) {
-                stairsLoc = map.findOpenArea(2);    // gives {x, y}
-                if (stairsLoc) {
-                    map.grid[stairsLoc.x][stairsLoc.y] = map.tileset.stairsDown;
-                }
-            }
+            map.grid[lastRoomCenterX][lastRoomCenterY] = map.tileset.stairsDown;
 
             // set this level's subLevel = nextLevel
             currentLevel.subLevel.area = nextLevel;
@@ -100,12 +118,9 @@ Game.Dungeon.prototype.connectLevels = function() {
             // set the subLevel's parentLevel to the stairsLoc
             // so that when we take the stairs up from subLevel,
             // we end up in the right place on this level.
-            nextLevel.parentLevel.x = stairsLoc.x;
-            nextLevel.parentLevel.y = stairsLoc.y;
+            nextLevel.parentLevel.x = lastRoomCenterX;
+            nextLevel.parentLevel.y = lastRoomCenterY;
             nextLevel.parentLevel.area = currentLevel;
-
-            // reset for next check
-            stairsLoc = null;
         }
 
         if (prev >= 1 && prev < this.numLevels) {
@@ -113,12 +128,7 @@ Game.Dungeon.prototype.connectLevels = function() {
             prevLevel = this.levels[prev];
 
             // make the stairs up on this level
-            while (!stairsLoc) {
-                stairsLoc = map.findOpenArea(2);    // gives {x, y}
-                if (stairsLoc) {
-                    map.grid[stairsLoc.x][stairsLoc.y] = map.tileset.stairsUp;
-                }
-            }
+            map.grid[firstRoomCenterX][firstRoomCenterY] = map.tileset.stairsUp;
 
             // set this level's parentLevel = prevLevel
             currentLevel.parentLevel.area = prevLevel;
@@ -126,11 +136,9 @@ Game.Dungeon.prototype.connectLevels = function() {
             // set the parentLevel's subLevel to the stairsLoc
             // so that when we take the stairs down from parentLevel,
             // we end up in the right place on this level.
-            prevLevel.subLevel.x = stairsLoc.x;
-            prevLevel.subLevel.y = stairsLoc.y;
+            prevLevel.subLevel.x = firstRoomCenterX;
+            prevLevel.subLevel.y = firstRoomCenterY;
             prevLevel.subLevel.area = currentLevel;
-
-            stairsLoc = null;
         }
 
     }

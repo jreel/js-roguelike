@@ -19,7 +19,12 @@ Game.Area = function (params) {
         map: null,                           // holds Game.Map object
         fov: null,
         sightRadiusMultiplier: 1,
-        clevel: 1                    // average creature level
+        clevel: 1,                          // average creature level
+        lastVisit: 0,           // to simulate turns if player leaves & comes back later
+        entities: {},           // table to hold entities in this area, stored by position
+        items: {},              // table to hold items in this area
+        parentLevel: {},
+        subLevel: {}
     };
 
     // apply defaults into the params where needed
@@ -37,27 +42,16 @@ Game.Area = function (params) {
     this.scheduler = new ROT.Scheduler.Simple();
     this.engine = new ROT.Engine(this.scheduler);
 
-    this.lastVisit = 0;                  // to simulate turns if player leaves & comes back later
-
-    this.entities = {};               // table to hold entities on this area, stored by position
-    this.items = {};                     // table to hold items on this area
-
-    this.parentLevel = {};
-    this.subLevel = {};
-
-
 };
 
 Game.Area.prototype.isOverworld = function() {
-    return (this.biome === "WORLD");
+    return (this instanceof Game.OverworldArea);
 };
 Game.Area.prototype.isWorldArea = function() {
-    return (this.parentLevel !== null && this.parentLevel.area.isOverworld());
+    return (this instanceof Game.WorldArea);
 };
-Game.Area.prototype.isSubArea = function() {
-    // to be easy, we'll just define a subArea as an area that
-    // is not a world Area, and is not the overworld.
-    return (!this.isOverworld() && !this.isWorldArea());
+Game.Area.prototype.isDungeonArea = function() {
+    return (this instanceof Game.DungeonArea);
 };
 
 Game.Area.prototype.populate = function(population) {
@@ -112,12 +106,9 @@ Game.Area.prototype.setupFov = function() {
 Game.Area.prototype.addDungeon = function(options) {
     options = options || {};
 
-    var depth = options['dungeonDepth'] || randomInt(3, 4);
+    var depth = options['dungeonDepth'] || randomInt(5, 10);
 
-    var dungeonLoc;
-    while (!dungeonLoc) {
-        dungeonLoc = this.map.findOpenArea(2);    // gives {x, y}
-    }
+    var dungeonLoc = this.map.getRandomFloorPosition();    // gives {x, y}
 
     this.dungeon = new Game.Dungeon({
         parentArea: this,
@@ -136,14 +127,14 @@ Game.Area.prototype.addDungeon = function(options) {
     firstLevel.parentLevel.area = this;
 
     // make stairs up from the first dungeon level
-    var stairsLoc;
-    while (!stairsLoc) {
-        stairsLoc = firstLevel.map.findOpenArea(2);
-    }
-    firstLevel.map.grid[stairsLoc.x][stairsLoc.y] = firstLevel.map.tileset.stairsUp;
+    var stairsUpRoom = firstLevel.rooms[firstLevel.rooms.length - 2];
+    var stairsUpX = (stairsUpRoom.xStart + stairsUpRoom.xEnd) >> 1;
+    var stairsUpY = (stairsUpRoom.yStart + stairsUpRoom.yEnd) >> 1;
 
-    this.subLevel.x = stairsLoc.x;
-    this.subLevel.y = stairsLoc.y;
+    firstLevel.map.grid[stairsUpX][stairsUpY] = firstLevel.map.tileset.stairsUp;
+
+    this.subLevel.x = stairsUpX;
+    this.subLevel.y = stairsUpY;
 };
 
 Game.Area.prototype.simulateTurns = function(numTurns) {

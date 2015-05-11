@@ -7,7 +7,6 @@
  * http://ondras.github.io/rot.js/hp/
  */
 
-// TODO: do we need a repository system for this as well?
 Game.Glyph = function(properties) {
     // this is the base "object" for the whole game
     // Instantiate properties to default if they weren't passed in
