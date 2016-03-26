@@ -12,22 +12,62 @@ var Game = {
     // DONE?: add extra displays
     // TODO: more displays for party/status - still a long way off
     displays: {
+        title: null,
         main: null,
         msg: null,
         help: null,
         stats: null
     },
     currentScreens: {
+        title: null,
         main: null,
         msg: null,
         help: null,
         stats: null
     },
-    windowWidth: 800,           // pixels
-    windowHeight: 600,          // pixels
-    screenWidth: 40,            // characters
-    screenHeight: 24,           // characters
-    msgScreenHeight: 10,        // characters
+
+    // dimensions of output areas
+    /*
+        As of March 2016, the most common screen resolutions are
+        1366x768, 1920x1080, and 1280x800 (in that order).
+
+        We'll set our initial windowWidth/Height to the smallest
+        values for each: 1280x768. (it will be adjusted later)
+     */
+    windowWidth: 1280,           // pixels
+    windowHeight: 768,          // pixels
+
+    /*
+     +-------------------------------+
+     |   title   (press H for help)  |
+     +--------------------+----------+
+     |                    |  stats   |
+     |     game play      |          |
+     |       (map)        | commands |
+     |      screen        |          |
+     |                    |          |
+     |                    |          |
+     +--------------------+----------+
+     |   game messages               |
+     |                               |
+     |                               |
+     +-------------------------------+
+     */
+    playScreenWidth: 60,            // characters
+    playScreenHeight: 40,           // characters
+
+    statsScreenWidth: 20,           // minimum acceptable width
+    statsScreenHeight: 40,
+
+    msgScreenWidth: 80,
+    msgScreenHeight: 10,
+
+    helpScreenWidth: 80,
+    helpScreenHeight: 1,
+
+    titleScreenWidth: 80,
+    titleScreenHeight: 50,
+
 
     // TODO: extra players, player creation routine
     player: null,
@@ -42,11 +82,10 @@ var Game = {
     },
 
     init: function() {
-        // Any necessary initialization will go here.
 
         this.displays.main = new ROT.Display({
-                                        width: this.screenWidth,
-                                        height: this.screenHeight,
+                                        width: this.playScreenWidth,
+                                        height: this.playScreenHeight,
                                         fontSize: 14,
                                         //fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
                                         forceSquareRatio: true,
@@ -54,7 +93,7 @@ var Game = {
                                         });
 
         this.displays.msg = new ROT.Display({
-                                        width: this.screenWidth,
+                                        width: this.msgScreenWidth,
                                         height: this.msgScreenHeight,
                                         fontSize: 14,
                                         //fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
@@ -62,20 +101,29 @@ var Game = {
                                         });
 
         this.displays.help = new ROT.Display({
-                                        width: this.screenWidth,
-                                        height: 1,
+                                        width: this.helpScreenWidth,
+                                        height: this.helpScreenHeight,
                                         fontSize: 14,
                                         //fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
                                         forceSquareRatio: false
                                         });
 
         this.displays.stats = new ROT.Display({
-                                    width: this.screenWidth,
-                                    height: 1,
+                                    width: this.statsScreenWidth,
+                                    height: this.statsScreenHeight,
                                     fontSize: 14,
                                     //fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
                                     fontStyle: 'bold',
                                     forceSquareRatio: false
+                                    });
+
+        this.displays.title = new ROT.Display({
+                                    width: this.titleScreenWidth,
+                                    height: this.titleScreenHeight,
+                                    fontSize: 14,
+                                    //fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
+                                    forceSquareRatio: false,
+                                    spacing: 1
                                     });
 
         this.recalcDisplaySize();
@@ -90,6 +138,9 @@ var Game = {
                 if (game.currentScreens.main !== null) {
                     // Send the event type and data to the screen
                     game.currentScreens.main.handleInput(event, e);
+                }
+                else if (game.currentScreens.title !== null) {
+                    game.currentScreens.title.handleInput(event, e);
                 }
                 e.stopPropagation();
             });
@@ -107,7 +158,7 @@ var Game = {
             return;
         }
 
-        var availSize, availWidth, availHeight;
+        var availSize, playWidth, playHeight;
 
         // get a window width/height that is 800x600 (or whatever we've defined as windowWidth/Height,
         // or 90% of what's available (if < windowWidth x windowHeight).
@@ -116,32 +167,52 @@ var Game = {
 
         availSize = this.displays.main.computeSize(this.windowWidth, this.windowHeight);  // returns [numCellsX, numCellsY]
 
-        // make sure width/height are even
-        availWidth = (availSize[0] % 2 === 0) ? availSize[0] : availSize[0] - 1;
-        availHeight = availSize[1] - this.msgScreenHeight;
-        if (availHeight % 2 !== 0) {
-            availHeight -= 1;
+        playHeight = availSize[1] - this.msgScreenHeight;
+        if (playHeight % 2 !== 0) {
+            playHeight += 1;
+        }
+
+        // playScreen should take up ~2/3 of available width
+        // also, playScreenWidth *MUST* be even (due to limitations of map gen)
+
+        playWidth = Math.ceil(availSize[0] * (2/3));
+        if (playWidth % 2 !== 0) {
+            playWidth -= 1;
         }
 
         // only change display if it needs changing
-        if (availWidth === this.screenWidth && availHeight === this.screenHeight) {
+        if (playWidth === this.playScreenWidth && playHeight === this.playScreenHeight) {
             return false;
         }
 
-        this.screenWidth = availWidth;
-        this.screenHeight = availHeight;
-        this.displays.main.setOptions({width: this.screenWidth, height: this.screenHeight});
+        this.playScreenWidth = playWidth;
+        this.playScreenHeight = playHeight;
+        this.displays.main.setOptions({width: this.playScreenWidth, height: this.playScreenHeight});
 
         // unfortunately, we have to do this separately for each display, since they may all be using
-        // slightly different font sizes/options and therefore have different available sizes
-        availSize = this.displays.msg.computeSize(this.windowWidth, this.windowHeight);
-        this.displays.msg.setOptions({width: availSize[0], height: this.msgScreenHeight});
+        // slightly different font sizes/options and therefore have different available grid sizes
 
-        availSize = this.displays.help.computeSize(this.windowWidth, this.windowHeight);
-        this.displays.help.setOptions({width: availSize[0], height: 1});
-
+        // stats display: ~1/3 of available width
         availSize = this.displays.stats.computeSize(this.windowWidth, this.windowHeight);
-        this.displays.stats.setOptions({ width: availSize[0], height: 1});
+        this.statsScreenWidth = Math.max(Math.floor(availSize[0] * (1 / 3)), 20);
+        this.statsScreenHeight = Math.max((availSize[1] - this.msgScreenHeight), playHeight);
+        this.displays.stats.setOptions({ width: this.statsScreenWidth, height: this.statsScreenHeight });
+
+        // message display is easy, it's the full width and a pre-defined character height
+        availSize = this.displays.msg.computeSize(this.windowWidth, this.windowHeight);
+        this.msgScreenWidth = availSize[0];
+        this.displays.msg.setOptions({width: this.msgScreenWidth, height: this.msgScreenHeight});
+
+        // the help display line is even easier: full width, height of 1
+        availSize = this.displays.help.computeSize(this.windowWidth, this.windowHeight);
+        this.helpScreenWidth = availSize[0];
+        this.displays.help.setOptions({width: this.helpScreenWidth, height: 1});
+
+        // title screen: full width, full height
+        availSize = this.displays.title.computeSize(this.windowWidth, this.windowHeight);
+        this.titleScreenWidth = availSize[0];
+        this.titleScreenHeight = availSize[1];
+        this.displays.title.setOptions({ width: this.titleScreenWidth, height: this.titleScreenHeight });
 
         return true;
     },
@@ -231,24 +302,49 @@ window.onload = function() {
         //document.write("<p>" + Game.logo + "</p>");
 
         // Add the containers to the HTML page
-        document.body.appendChild(Game.displays.help.getContainer());
-        document.body.appendChild(document.createElement("br"));
-        document.body.appendChild(Game.displays.stats.getContainer());
-        document.body.appendChild(document.createElement("br"));
-        document.body.appendChild(Game.displays.main.getContainer());
-        document.body.appendChild(document.createElement("br"));
-        document.body.appendChild(Game.displays.msg.getContainer());
+        var helpdiv = document.getElementById("helpDiv");
+        var playdiv = document.getElementById("playDiv");
+        var statsdiv = document.getElementById("statsDiv");
+        var msgdiv = document.getElementById("msgDiv");
+        var inputdiv = document.getElementById("inputDiv");
+        var titlediv = document.getElementById("titleDiv");
+
+        helpdiv.appendChild(Game.displays.help.getContainer());
+        playdiv.appendChild(Game.displays.main.getContainer());
+        statsdiv.appendChild(Game.displays.stats.getContainer());
+        msgdiv.appendChild(Game.displays.msg.getContainer());
+        titlediv.appendChild(Game.displays.title.getContainer());
 
         // TODO: additional displays
+
+        /*
         Game.switchScreen(Game.Screen.helpLine, 'help');
-        Game.switchScreen(Game.Screen.statsLine, 'stats');
+        Game.switchScreen(Game.Screen.statsScreen, 'stats');
         Game.switchScreen(Game.Screen.messageScreen, 'msg');
+        Game.switchScreen(Game.Screen.playScreen, 'main');
+        */
         // Load the start screen
-        Game.switchScreen(Game.Screen.startScreen, 'main');
+        Game.switchScreen(Game.Screen.startScreen, 'title');
+
+        // hide everything but the title screen at the start.
+        helpdiv.style.display = "none";
+        playdiv.style.display = "none";
+        statsdiv.style.display = "none";
+        msgdiv.style.display = "none";
+        inputdiv.style.display = "none";
+
+        titlediv.style.display = "block";
+        titlediv.style.position = "fixed";
+        titlediv.style.left = "0";
+        titlediv.style.top = "0";
+
+
     } else {
         alert("The rot.js library isn't supported by your browser.");
     }
 };
+
+
 /*
 window.onresize = function() {
     Game.recalcDisplaySize();

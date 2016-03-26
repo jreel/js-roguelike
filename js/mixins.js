@@ -761,6 +761,7 @@ Game.Mixins.playerTracker = {
     listeners: {
         onTurnTaken: function() {
             this.trackers.turnsTaken++;
+            //TODO: update time counter
         },
         onKill: function(victim) {
             this.trackers.enemiesSlain++;
