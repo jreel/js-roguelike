@@ -56,6 +56,7 @@ Game.Screen.startScreen = {
         }
         var introtext = ["%c{#8ff}A Javascript Roguelike",
                          "",
+                         "build " + Game.version,
                          "%c{#888}(currently in pre-alpha development -",
                          "%c{#888}there's not really a \"Tower\" yet!)",
                          "",
@@ -157,7 +158,7 @@ Game.Screen.playScreen = {
 
         display.setOptions({
             width: screenWidth,
-            height: screenHeight + 1,
+            height: screenHeight,
             fontSize: fontSize,
             //fontFamily: "Segoe UI Symbol",
             forceSquareRatio: forceSquare,
@@ -682,8 +683,10 @@ Game.Screen.gainStatScreen = {
             fontSize: 16,
             forceSquareRatio: false
         });
-        var availSize = display.computeSize(Game.windowWidth, Game.windowHeight);
-        display.setOptions({ width: availSize[0] });
+
+        var availSize = display.computeSize(Game.playDivWidth, Game.playDivHeight);
+        display.setOptions({ width: availSize[0], height: availSize[1] });
+
 
         var letters = 'abcdefghijklmnopqrstuvwxyz';
         display.drawText(0, 1, 'Level Up!');
@@ -744,6 +747,9 @@ Game.Screen.winScreen = {
             fg: '#fff',
             bg: '#000'
         });
+        var availSize = display.computeSize(Game.playDivWidth, Game.playDivHeight);
+        display.setOptions({ width: availSize[0], height: availSize[1] });
+
 
         // Render our prompt to the screen
         for (var i = 0; i < 12; i++) {
@@ -802,6 +808,9 @@ Game.Screen.loseScreen = {
             fg: '#000',
             bg: '#800'
         });
+        var availSize = display.computeSize(Game.playDivWidth, Game.playDivHeight);
+        display.setOptions({ width: availSize[0], height: availSize[1] });
+
 
         var row = 1;
         var col = 0;
@@ -892,8 +901,8 @@ Game.Screen.ItemListScreen.prototype.render = function(display) {
         fontSize: 16,
         forceSquareRatio: false
     });
-    var availSize = display.computeSize(Game.windowWidth, Game.windowHeight);
-    display.setOptions({width: availSize[0]});
+    var availSize = display.computeSize(Game.playDivWidth, Game.playDivHeight);
+    display.setOptions({ width: availSize[0], height: availSize[1] });
 
 
     var letters = 'abcdefghijklmnopqrstuvwxyz';
@@ -1634,8 +1643,8 @@ Game.Screen.helpScreen = {
         display.setOptions({
             fontSize: 16,
             forceSquareRatio: false });
-        var availSize = display.computeSize(Game.windowWidth, Game.windowHeight);
-        display.setOptions({ width: availSize[0] });
+        var availSize = display.computeSize(Game.playDivWidth, Game.playDivHeight);
+        display.setOptions({ width: availSize[0], height: availSize[1] });
 
         var text   = 'Shattered Tower Help';
         var border = '--------------------';
