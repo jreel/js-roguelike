@@ -10,8 +10,8 @@
 Game.Area = function (params) {
     var defaults = {
         id: 0,
-        width: Game.screenWidth * 2,
-        height: Game.screenHeight * 2,
+        width: Game.playScreenWidth * 2,
+        height: Game.playScreenHeight * 2,
         world: null,
         parentX: 0,
         parentY: 0,

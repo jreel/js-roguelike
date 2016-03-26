@@ -23,24 +23,32 @@ Game.Screen.startScreen = {
         // Render our prompt to the screen
         // DONE?: change to something more aesthetic
 
-        var logoSize = ROT.Text.measure(Game.logo);
+        var logoSize = ROT.Text.measure(Game.logo);     // returns logoSize.width, logoSize.height
+        var availSize = display.computeSize(Game.windowWidth, Game.windowHeight);
+
+        var availWidth = availSize[0];
+        var availHeight = availSize[1];
 
         display.setOptions({
-            width: logoSize.width + 2,
-            height: logoSize.height + 10,
-            fontSize: 13,
+            width: availWidth,
+            height: availHeight,
+            fontSize: 14,
             forceSquareRatio: false,
             spacing: 1,
             fg: '#ccc',
             bg: '#000'
         });
 
-        var row = 1;
-        var col = 1;
+        // center the logo within the display
+
+        var row = Math.max(0, Math.floor((availHeight - logoSize.height) / 2) - 10);
+        var startCol = Math.floor((availWidth - logoSize.width) / 2);
+
+        var col = startCol;
         for (var i = 0; i < Game.logo.length; i++) {
             if (Game.logo.charAt(i) == '\n') {
                 row++;
-                col = 1;
+                col = startCol;
             } else {
                 display.draw(col, row, Game.logo.charAt(i));
                 col++;
@@ -54,8 +62,8 @@ Game.Screen.startScreen = {
                          "%c{#ff8}Press [Enter] to start."];
         for (t = 0; t < introtext.length; t++) {
             var textSize = ROT.Text.measure(introtext[t]);
-            var centerStart = (logoSize.width - textSize.width) / 2;
-            display.drawText(centerStart, logoSize.height + 3 + t, introtext[t]);
+            var centerStart = Math.floor((availWidth - textSize.width) / 2);
+            display.drawText(centerStart, row + 3 + t, introtext[t]);
         }
 
     },
@@ -64,6 +72,18 @@ Game.Screen.startScreen = {
         // TODO: mouse input
         if (inputType === 'keydown') {
             if (inputData.keyCode === ROT.VK_RETURN) {
+
+                // hide the title div, and show the others
+                document.getElementById("titleDiv").style.display = "none";
+                document.getElementById("helpDiv").style.display = "block";
+                document.getElementById("playDiv").style.display = "block";
+                document.getElementById("statsDiv").style.display = "block";
+                document.getElementById("msgDiv").style.display = "block";
+                document.getElementById("inputDiv").style.display = "block";
+
+                Game.switchScreen(Game.Screen.helpLine, 'help');
+                Game.switchScreen(Game.Screen.statsScreen, 'stats');
+                Game.switchScreen(Game.Screen.messageScreen, 'msg');
                 Game.switchScreen(Game.Screen.playScreen, 'main');
             }
         }
@@ -77,6 +97,9 @@ Game.Screen.playScreen = {
     enter: function(display) {
         // console.log("Entered play screen.");
 
+        // set the title screen to null
+        Game.currentScreens.title = null;
+
         // if we are entering from the lose screen, be sure to reset
         // the gameOver flag
         // TODO: this may need changing if we implement player character creation
@@ -85,12 +108,13 @@ Game.Screen.playScreen = {
         }
 
         display.setOptions({
-            width: Game.screenWidth,
-            height: Game.screenHeight + 1,
+            width: Game.playScreenWidth,
+            height: Game.playScreenHeight + 1,
             //fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
             fontSize: 14,
             forceSquareRatio: true,
-            spacing: 1
+            spacing: 1,
+            bg: "#111"
         });
 
         Game.startNewGame();
@@ -110,8 +134,8 @@ Game.Screen.playScreen = {
         var player = Game.player;
         var area = player.area;
 
-        var screenWidth = Game.screenWidth;
-        var screenHeight = Game.screenHeight;
+        var screenWidth = Game.playScreenWidth;
+        var screenHeight = Game.playScreenHeight;
 
         var fontSize, spacing, forceSquare;
         // set display options depending on current area
@@ -264,8 +288,8 @@ Game.Screen.playScreen = {
         var area = Game.currentWorld.currentArea;
         var mapWidth = area.map.width;
         var mapHeight = area.map.height;
-        var screenWidth = Game.screenWidth;
-        var screenHeight = Game.screenHeight;
+        var screenWidth = Game.playScreenWidth;
+        var screenHeight = Game.playScreenHeight;
 
         var mapLeftBound, mapTopBound, mapX, mapY;
 
@@ -301,8 +325,8 @@ Game.Screen.playScreen = {
         var area = player.area;
         var map = area.map;
 
-        var screenWidth = Game.screenWidth;
-        var screenHeight = Game.screenHeight;
+        var screenWidth = Game.playScreenWidth;
+        var screenHeight = Game.playScreenHeight;
 
         var mapWidth = area.width;
         var mapHeight = area.height;
@@ -472,10 +496,20 @@ Game.Screen.playScreen = {
 
 };
 
-Game.Screen.statsLine = {
-    enter: function() {
+Game.Screen.statsScreen = {
+    enter: function(display) {
 
+        display.setOptions({
+                               width: Game.statsScreenWidth,
+                               height: Game.statsScreenHeight,
+                               //fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
+                               fontSize: 14,
+                               forceSquareRatio: false,
+                               bg: "#000"
+                           }
+        );
     },
+
     exit: function() {
 
     },
@@ -484,58 +518,86 @@ Game.Screen.statsLine = {
             display.clear();
             return;
         }
-
         var player = Game.player;
-        var offset = 0;
+
+        /*
+            Things to show in the stats screen:
+
+            Time, Day
+            Current Area
+            Weather
+
+            Health
+            Hunger
+            Thirst(?)
+            Fatigue
+
+            (commands:)
+            World [M]ap
+
+            [I]nventory
+            [E]at
+            [D]rop
+            [W]ear or wield
+
+            [U]se
+            [R]est
+
+            [T]hrow
+            [L]ook around
+            E[X]amine
+
+            Here:
+               description of tile
+               list of items
+         */
+
+        // TODO: show current time & day
+        display.drawText(0, 0, "Day 1" + ", " + "00:00");
 
         // show current area
-        var areaLabel = '%c{#fff}%b{#000}Exploring: ';
         var currentBiome = Game.currentWorld.currentArea.biome;
         currentBiome = currentBiome.toLowerCase();
         currentBiome = currentBiome.replace("_", " ");
         //var subBiome = Game.currentWorld.getBiomeName(Game.player.x, Game.player.y).toLowerCase();
         //currentArea += " (" + subBiome.toLowerCase() + ")";
-
+        /*
         var coordinateLabel = ' (';
         var xCoordinate = player.x;
         var yCoordinate = player.y;
         coordinateLabel += xCoordinate + ', ' + yCoordinate + ')';
+        */
+        display.drawText(0, 1, '%c{#fff}Exploring: ' + currentBiome);
 
-        var areaOut = areaLabel + currentBiome + coordinateLabel;
-        display.drawText(offset, 0, areaOut);
-        offset += (ROT.Text.measure(areaOut).width + 3);
 
         // show current hp
-        var hpLabel = '%c{#fff}%b{#000}HP: ';
         var hpState = player.getHpState();
-        display.drawText(offset, 0, hpLabel + hpState);
-        offset += (ROT.Text.measure(hpLabel + hpState).width + 3);
+        display.drawText(0, 4, '%c{#fff}%b{#000}Health: ' + hpState);
+
+        // show current hunger state
+        var hungerState = player.getHungerState();
+        display.drawText(0, 6, '%c{#fff}%b{#000}Hunger: ' + hungerState);
+
 
         // show current weapon
-        var weaponLabel = '%c{#fff}%b{#000}Wielding: ';
         var weaponName;
         if (player.weapon) {
             weaponName = player.weapon.name;
         } else {
             weaponName = 'nothing';
         }
-        display.drawText(offset, 0, weaponLabel + weaponName);
-        offset += (ROT.Text.measure(weaponLabel + weaponName).width + 3);
+        display.drawText(0, 10, '%c{#fff}%b{#000}Wielding: ' + weaponName);
 
         // show current armor
-        var armorLabel = '%c{#fff}%b{#000}Wearing: ';
         var armorName;
         if (player.armor) {
             armorName = player.armor.name;
         } else {
             armorName = 'nothing';
         }
-        display.drawText(offset, 0, armorLabel + armorName);
-        offset += (ROT.Text.measure(armorLabel + armorName).width + 3);
+        display.drawText(0, 11, '%c{#fff}%b{#000}Wearing: ' + armorName);
 
-        // show current hunger state
-        var hungerState = player.getHungerState();
-        display.drawText(offset, 0, hungerState);
+
 
     },
     handleInput: function(inputType, inputData) {
@@ -544,8 +606,16 @@ Game.Screen.statsLine = {
 };
 
 Game.Screen.helpLine = {
-    enter: function() {
-
+    enter: function(display) {
+        display.setOptions({
+                               width: Game.helpScreenWidth,
+                               height: Game.helpScreenHeight,
+                               //fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
+                               fontSize: 14,
+                               forceSquareRatio: false,
+                               bg: "#000"
+                           }
+        );
     },
     exit: function() {
 
@@ -555,8 +625,8 @@ Game.Screen.helpLine = {
             display.clear();
             return;
         }
-        display.drawText(0, 0, "%c{#fff}%b{#000}[⇦⇧⇩⇨] move/attack, " +
-                               "[Space] pick up, [I] inventory, [D] drop, [E] eat, [W] wear/wield");
+        display.drawText(0, 0, "%c{#fff}%b{#000}Use the arrow keys [⇦⇧⇩⇨] to move and attack, " +
+                               "[spacebar] to pick up items. Press [H] for more help.");
     },
     handleInput: function(inputType, inputData) {
 
@@ -564,8 +634,16 @@ Game.Screen.helpLine = {
 };
 
 Game.Screen.messageScreen = {
-    enter: function() {
-
+    enter: function(display) {
+        display.setOptions({
+                               width: Game.msgScreenWidth,
+                               height: Game.msgScreenHeight,
+                               //fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
+                               fontSize: 14,
+                               forceSquareRatio: false,
+                               bg: "#000"
+                           }
+        );
     },
     exit: function() {
 
@@ -1252,8 +1330,8 @@ Game.Screen.TargetingScreen.prototype.handleInput = function(inputType, inputDat
 Game.Screen.TargetingScreen.prototype.moveCursor = function(dx, dy) {
     // make sure we stay within bounds
     // TODO: scrolling?
-    this.cursorX = Math.max(0, Math.min(this.cursorX + dx, Game.screenWidth));
-    this.cursorY = Math.max(0, Math.min(this.cursorY + dy, Game.screenHeight - 1));
+    this.cursorX = Math.max(0, Math.min(this.cursorX + dx, Game.playScreenWidth));
+    this.cursorY = Math.max(0, Math.min(this.cursorY + dy, Game.playScreenHeight - 1));
 
     this.points = Game.Geometry.getLine(this.startX, this.startY, this.cursorX, this.cursorY);
 };
@@ -1299,7 +1377,7 @@ Game.Screen.TargetingScreen.prototype.render = function(display) {
     }
 
     // render a caption at the bottom of the screen
-    display.drawText(0, Game.screenHeight - 1,
+    display.drawText(0, Game.playScreenHeight - 1,
                      this.captionFunction(this.cursorX + this.offsetX, this.cursorY + this.offsetY)
     );
 };
@@ -1464,8 +1542,8 @@ Game.Screen.throwAtTargetScreen = new Game.Screen.TargetingScreen({
 // let's implement our own moveCursor method so we can't target through walls
 Game.Screen.throwAtTargetScreen.moveCursor = function(dx, dy) {
     // make sure we stay within bounds
-    this.cursorX = Math.max(0, Math.min(this.cursorX + dx, Game.screenWidth));
-    this.cursorY = Math.max(0, Math.min(this.cursorY + dy, Game.screenHeight - 1));
+    this.cursorX = Math.max(0, Math.min(this.cursorX + dx, Game.playScreenWidth));
+    this.cursorY = Math.max(0, Math.min(this.cursorY + dy, Game.playScreenHeight - 1));
 
     this.points = Game.Geometry.getLine(this.startX, this.startY, this.cursorX, this.cursorY);
 
@@ -1544,7 +1622,7 @@ Game.Screen.throwAtTargetScreen.render = function(display) {
     }
 
     // render a caption at the bottom of the screen
-    display.drawText(0, Game.screenHeight - 1, this.captionFunction(mapX, mapY)
+    display.drawText(0, Game.playScreenHeight - 1, this.captionFunction(mapX, mapY)
     );
 
     this.validTarget = okCheck;
@@ -1564,7 +1642,7 @@ Game.Screen.helpScreen = {
         var y = 2;
 
         var textSize = ROT.Text.measure(text);
-        var centerStart = (Game.screenWidth - textSize.width) / 2;
+        var centerStart = (Game.playScreenWidth - textSize.width) / 2;
         display.drawText(centerStart, y++, text);
         display.drawText(centerStart, y++, border);
         y++;
@@ -1580,7 +1658,7 @@ Game.Screen.helpScreen = {
         y +=2;
         text = '--- press any key to continue ---';
         textSize = ROT.Text.measure(text);
-        centerStart = (Game.screenWidth - textSize.width) / 2;
+        centerStart = (Game.playScreenWidth - textSize.width) / 2;
         display.drawText(centerStart, y++, text);
     },
 
