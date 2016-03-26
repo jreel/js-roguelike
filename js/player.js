@@ -11,11 +11,11 @@
 // TODO: party system
 Game.Player = function(template) {
     var defaults = {
-        name: "hero",
+        name: "hero (you)",
         description: "This hero will surely save the day!",
         character: '@',
         foreground: '#fff',
-        background: '',
+        background: '#000',
         isHostile: false,
 
         isActor: true,      // since we don't need the generic actor mixin
@@ -28,7 +28,9 @@ Game.Player = function(template) {
             baseDefenseValue: 0
         },
         attacker: {
-            baseAttackValue: 1
+            baseAttackValue: 1,
+            isRangedAttacker: true,
+            canThrowItems: true
         },
         sight: {
             sightRadius: 5
@@ -38,7 +40,7 @@ Game.Player = function(template) {
             inventorySlots: 22
         },
         foodEater: {
-            maxFullness: 2000,
+            maxFullness: 1000,
             hungerRate: 1
         },
         armorUser: true,
@@ -116,7 +118,7 @@ Game.Player.prototype.setLocation = function(x, y, area) {
             newArea.populate();
 
             // scatter items in dungeon areas
-            if (newArea.isSubArea()) {
+            if (newArea.isDungeonArea()) {
                 newArea.scatterItems();
             }
         }
@@ -174,7 +176,7 @@ Game.Player.prototype.move = function(newX, newY) {
             }
         }
 
-        if (area.isWorldArea() || area.isSubArea()) {
+        if (area.isWorldArea() || area.isDungeonArea()) {
             // TODO: display any messages about activatable tiles
             if (tile == area.map.tileset.stairsUp) {
                 Game.sendMessage('info', player, "Press [Space] to go up the stairs.");
@@ -224,38 +226,23 @@ Game.Player.prototype.changeAreas = function(x, y) {
             newArea = world.worldAreas[x + ',' + y];
 
         } else {
-            var biome = world.getBiomeName(x, y);
-            if (tile == Game.Tilesets.worldMap.TOWN) {
-                //biome += "+TOWN";
-            }
-            newArea = world.addArea({   biome: biome,
-                                        parentX: x,
-                                        parentY: y   });
-
+            newArea = world.generateWorldArea(x, y);
             newArea.engine.start();
             // populate() is called by player.setLocation
         }
 
         // try to set the player in the center of the new area
-        // ideally, in an open space close to the center
         // if not, in a closed space at or close to the center
         newX = newArea.map.width / 2;
         newY = newArea.map.height / 2;
-        var newLoc = newArea.map.findOpenArea(1, {x: newX, y: newY});
-
-        if (newLoc) {
-            player.setLocation(newLoc.x, newLoc.y, newArea);
-        }
-        else {
-            player.setLocation(newX, newY, newArea);
-        }
+        player.setLocation(newX, newY, newArea);
         // setLocation handles simulating turns upon re-visiting an area
 
         return true;
     }
 
     // check for stairs up/down
-    if (currentArea.isWorldArea() || currentArea.isSubArea()) {
+    if (currentArea.isWorldArea() || currentArea.isDungeonArea()) {
 
         if (tile == currentArea.map.tileset.stairsUp) {
             // go to the parent area

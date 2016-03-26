@@ -18,7 +18,7 @@ Game.HeroTemplates = {
     default: {
         character: '@',
         foreground: '#fff',
-        background: '',
+        background: '#000',
 
         // mixins
         destructible: {

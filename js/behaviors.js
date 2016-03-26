@@ -110,7 +110,7 @@ Game.Behaviors = {
         owner.hp += 10;
         // send a message saying the zombie grew
         Game.sendMessageNearby(owner.area, owner.x, owner.y, 10,
-                               '%c{#f30}An extra arm appears on %s!', owner.describeThe());
+                               '%c{#f30}An extra arm appears on the %s!', owner.describe());
         return true;
     },
 

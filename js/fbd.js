@@ -38,21 +38,23 @@ Game.FBdungeon = function(map, tileset, options) {
     this.roomChance = options['roomChance'] || 85;      // lower = more corridors
     this.corridorChance = options['corridorChance'] || (100 - this.roomChance);
 
-    this.maxRoomSize = options['maxRoomSize'] || 10;
+    this.maxRoomSize = options['maxRoomSize'] || 9;
     this.maxRoomWidth = options['maxRoomWidth'] || this.maxRoomSize;
     this.maxRoomHeight = options['maxRoomHeight'] || this.maxRoomSize;
-    this.maxCorridorLength = options['maxCorridorLength'] || 6;
+    this.maxCorridorLength = options['maxCorridorLength'] || 8;
 
     // some defines
     this.N = 0;
     this.E = 1;
     this.S = 2;
     this.W = 3;
+
+    this.rooms = [];    // {xStart, yStart, xEnd, yEnd}
 };
 
 Game.FBdungeon.prototype.generate = function() {
     // make one room in the center of map to start off
-    this.makeRoom(Math.floor(this.mapWidth / 2), Math.floor(this.mapHeight / 2), randomInt(0, 3));
+    this.makeRoom( (this.mapWidth >> 1), (this.mapHeight >> 1), randomInt(0, 3));
 
     for (var f = 1; f < this.maxFeatures; f++) {
 
@@ -128,7 +130,7 @@ Game.FBdungeon.prototype.makeCorridor = function(x, y, dir, length, force) {
             this.map.tileArea(xStart, y, xEnd, y, this.tileset.corridor);
         }
         else if (yStart === y || yEnd === y) {  // north- or south-heading corridor
-            this.map.tileArea(x, yStart, x, yEnd - 1, this.tileset.corridor);
+            this.map.tileArea(x, yStart, x, yEnd, this.tileset.corridor);
         }
         return true;
     }
@@ -137,8 +139,10 @@ Game.FBdungeon.prototype.makeCorridor = function(x, y, dir, length, force) {
 
 Game.FBdungeon.prototype.makeRoom = function(x, y, dir, xLength, yLength) {
     // minimum room size of 5x5 tiles (3x3 for walking on, the rest is walls)
-    xLength = xLength || randomInt(5, this.maxRoomWidth);
-    yLength = yLength || randomInt(5, this.maxRoomHeight);
+    // random range starts at 6 due to the "fuzzy logic" for determining room door
+    // position below
+    xLength = xLength || randomInt(6, this.maxRoomWidth);
+    yLength = yLength || randomInt(6, this.maxRoomHeight);
 
     var xStart = x;
     var yStart = y;
@@ -151,19 +155,19 @@ Game.FBdungeon.prototype.makeRoom = function(x, y, dir, xLength, yLength) {
     // room door always above or below the calculated halfway point of the room.
     if (dir === this.N) {
         yStart = y - yLength;
-        xStart = x - Math.floor(xLength / 2) + randomInt(0,1);
-        xEnd = x + Math.floor(xLength / 2) + randomInt(0, 1);
+        xStart = x - (xLength >> 1) + randomInt(0,1);
+        xEnd = x + (xLength >> 1) + randomInt(0, 1);
     } else if (dir === this.E) {
-        yStart = y - Math.floor(yLength / 2) + randomInt(0, 1);
-        yEnd = y + Math.floor(yLength / 2) + randomInt(0, 1);
+        yStart = y - (yLength >> 1) + randomInt(0, 1);
+        yEnd = y + (yLength >> 1) + randomInt(0, 1);
         xEnd = x + xLength;
     } else if (dir === this.S) {
         yEnd = y + yLength;
-        xStart = x - Math.floor(xLength / 2) + randomInt(0, 1);
-        xEnd = x + Math.floor(xLength / 2) + randomInt(0, 1);
+        xStart = x - (xLength >> 1) + randomInt(0, 1);
+        xEnd = x + (xLength >> 1) + randomInt(0, 1);
     } else if (dir === this.W) {
-        yStart = y - Math.floor(yLength / 2) + randomInt(0, 1);
-        yEnd = y + Math.floor(yLength / 2) + randomInt(0, 1);
+        yStart = y - (yLength >> 1) + randomInt(0, 1);
+        yEnd = y + (yLength >> 1) + randomInt(0, 1);
         xStart = x - xLength;
     }
 
@@ -177,6 +181,13 @@ Game.FBdungeon.prototype.makeRoom = function(x, y, dir, xLength, yLength) {
 
     this.map.tileArea(xStart, yStart, xEnd, yEnd, this.tileset.wall);
     this.map.tileArea(xStart + 1, yStart + 1, xEnd - 1, yEnd - 1, this.tileset.floor);
+
+    // add room interior area to rooms array
+    this.rooms.push({   xStart: xStart + 1,
+                        yStart: yStart + 1,
+                        xEnd: xEnd - 1,
+                        yEnd: yEnd - 1});
+
     return true;
 };
 

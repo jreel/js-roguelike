@@ -10,6 +10,7 @@
 // TODO: different tilesets, possibly repository system?
 Game.Tile = function(properties) {
     var defaults = {
+        description: '',
         isWalkable: false,
         isBreakable: false,
         passesLight: false
@@ -62,7 +63,7 @@ Game.Tile.prototype.darken = function() {
  - teleport (could be used for stair tiles too)
  */
 
-Game.Tile.nullTile = new Game.Tile({});
+Game.Tile.nullTile = new Game.Tile({description: '(unknown)'});
 
 Game.Tile.floorTile = new Game.Tile({
     character: '.',

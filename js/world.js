@@ -11,7 +11,7 @@
     WORLD:  a collection of AREAs, with one area as a "zoomed out" / "overworld" map.
 */
 // In the constructor function, we should pre-generate the "overworld"
-// and the starting Area.
+// and the starting Area (including starting Dungeon).
 // Other Areas will be generated only when they are first visited.
 Game.World = function(options) {
     options = options || {};
@@ -27,24 +27,121 @@ Game.World = function(options) {
     this.dataMap = this.generateDataMap(mapSize);      // 2D data store
     var worldMap = this.generateWorldMap(mapSize);     // returns a Game.Map object
 
-    // generateOverworldArea method will add some other properties,
-    // pass to Game.Area constructor, setup fov, and return new Area object.
-    this.overworld = this.generateOverworldArea({
-                                    width: mapSize,
-                                    height: mapSize,
-                                    biome: "WORLD",
-                                    sightRadiusMultiplier: 20,
-                                    map: worldMap });
+    var self = this;
+    this.overworld = new Game.OverworldArea({   width: mapSize,
+                                                height: mapSize,
+                                                map: worldMap,
+                                                world: self     });
 
-    var numTowns = randomNormalInt(mapSize / 10, mapSize / 50);
-    this.placeTowns(numTowns);
+    //var numTowns = randomNormalInt(mapSize / 10, mapSize / 50);
+    //this.placeTowns(numTowns);
 
     this.currentArea = this.overworld;
 
-    this.worldAreas = {};           // key [x,y]: Area, populated from addArea() method
-
+    this.worldAreas = {};           // key [x,y]: WorldArea,
+                                // populated from generateWorldArea() method
 
 };
+Game.OverworldArea = function(options) {
+    options = options || {};
+    var defaults = {
+        width: 256,
+        height: 256,
+        biome: "WORLD",
+        sightRadiusMultiplier: 20,
+        parentLevel: null,
+        subLevel: null
+    };
+
+    // options should pass in a world map
+    // generate a new one if not
+    if (!options.map) {
+        var mapSize = Math.max(options.width, options.height);
+        if (!world.dataMap) {
+            world.dataMap = world.generateDataMap(mapSize)
+        }
+        options.map = world.generateWorldMap(mapSize);
+    }
+
+
+    options = applyDefaults(options, defaults);
+    Game.Area.call(this, options);
+
+    this.map.area = this;
+    this.map.wrap = true;
+    this.setupFov();
+    return this;
+};
+Game.OverworldArea.extend(Game.Area);
+
+Game.WorldArea = function(options) {
+    options = options || {};
+    options.width = options['width'] || 32;
+    options.height = options['height'] || 32;
+
+    // options should pass in a biome type
+    // use this to get a generator and a tileset for the area
+    // (if needed)
+    if (!options.map) {
+        var biome = options['biome'];
+        var biomeArea = Game.BiomeArea[biome];
+        var tileset = options['tileset'] || biomeArea.tileset;
+        var builder = options['builder'] || biomeArea.builder;
+
+        var tiles = builder(options.width, options.height, tileset);
+        options.map = new Game.Map(tiles, tileset);
+    }
+    options.sightRadiusMultiplier = options['sightRadiusMultiplier'] || biomeArea.sightRadiusMultiplier;
+
+    Game.Area.call(this, options);
+
+    // since this is a WorldArea, set the parentLevel to the overworld
+    this.parentLevel.area = options.world.overworld;
+    this.parentLevel.x = options['parentX'];
+    this.parentLevel.y = options['parentY'];
+
+    this.map.area = this;
+    this.map.wrap = false;
+    this.setupFov();
+
+    // chance to add Dungeon
+    var chance = options['dungeonChance'] || 100;
+    var roll = randomPercent();
+    if (roll <= chance) {
+        this.addDungeon(options);
+    }
+};
+Game.WorldArea.extend(Game.Area);
+
+
+// this is for adding WorldAreas to the game world.
+// for adding DungeonAreas to WorldAreas, use the
+// method of the Area prototype
+Game.World.prototype.generateWorldArea = function(x, y, options) {
+    options = options || {};
+    options.width = options['width'] || 32;
+    options.height = options['height'] || 32;
+
+    // set some additional options based on the passed x, y
+    options.parentX = x;
+    options.parentY = y;
+    options.id = x + ',' + y;
+    if (!options.biome) {
+        options.biome = this.getBiomeName(x, y);
+    }
+    options.world = this;
+
+    // make the new WorldArea
+    var newArea = new Game.WorldArea(options);
+
+    // add to the areas table
+    if (options.id) {
+        this.worldAreas[options.id] = newArea;
+    }
+
+    return newArea;
+};
+
 
 Game.World.prototype.getRandomLandLocation = function() {
     var exceptedBiomes = ["DEEP_WATER", "SHALLOW_WATER", "POLAR_ICECAP", "GLACIER",
@@ -69,99 +166,6 @@ Game.World.prototype.getRandomLandLocation = function() {
     // if we still haven't found a good spot at this point,
     // return false... we can handle that in the calling routine
     return false;
-};
-
-
-Game.World.prototype.generateOverworldArea = function(options) {
-    options = options || {};
-
-    options.width = options['width'] || this.mapSize || 256;
-    options.height = options['height'] || this.mapSize || 256;
-
-    // options should pass in a world map
-    // generate a new one if not
-    if (!options.map) {
-        var mapSize = Math.max(options.width, options.height);
-        if (!this.dataMap) {
-            this.dataMap = this.generateDataMap(mapSize)
-        }
-        options.map = this.generateWorldMap(mapSize);
-    }
-
-    if (!options.biome) {
-        options.biome = "WORLD";
-    }
-
-    options.sightRadiusMultiplier = options['sightRadiusMultiplier'] || 20;
-    options.world = this;
-
-    var overworld = new Game.Area(options);
-
-    // since this Area is the worldMap itself, set the parentLevel to null
-    overworld.parentLevel = null;
-
-    overworld.map.area = overworld;
-    overworld.map.wrap = true;
-
-    overworld.setupFov();
-
-    return overworld;
-};
-
-// this is for adding world Areas to the game world.
-// for adding sub-Areas (sublevels) to world Areas, use the
-// method of the Area prototype
-Game.World.prototype.addArea = function(options) {
-    options = options || {};
-
-    options.width = options['width'] || 32;
-    options.height = options['height'] || 32;
-
-    // options should pass in a biome type
-    // use this to get a generator and a tileset for the area
-    // (if needed)
-    if (!options.map) {
-        var biome = options['biome'];
-        var biomeArea = Game.BiomeArea[biome];
-        var tileset = options['tileset'] || biomeArea.tileset;
-        var builder = options['builder'] || biomeArea.builder;
-
-        var tiles = builder(options.width, options.height, tileset);
-        options.map = new Game.Map(tiles, tileset);
-    }
-
-    options.sightRadiusMultiplier = options['sightRadiusMultiplier'] || biomeArea.sightRadiusMultiplier;
-    options.world = this;
-
-    // generate key for world Areas table
-    options.id = options['parentX'] + ',' + options['parentY'];
-
-    var newArea = new Game.Area(options);
-
-    // since this is an Area of the world, set the parentLevel to the overworld
-    newArea.parentLevel.area = this.overworld;
-    newArea.parentLevel.x = options['parentX'];
-    newArea.parentLevel.y = options['parentY'];
-
-    newArea.map.area = newArea;
-    newArea.map.wrap = false;
-
-    newArea.setupFov();
-    // newArea.populate(); -- not populated until visited
-
-    // chance to add Dungeon
-    var chance = options['dungeonChance'] || 100;
-    var roll = randomPercent();
-    if (roll <= chance) {
-        newArea.addDungeon(options);
-    }
-
-    // add to the areas table
-    if (options.id) {
-        this.worldAreas[options.id] = newArea;
-    }
-
-    return newArea;
 };
 
 Game.World.prototype.findGoodTownLocations = function(amount) {
@@ -557,30 +561,4 @@ Game.World.prototype.generateTemperatureMap = function(mapToUpdate) {
     }
 
     return tMap;
-};
-
-
-
-
-
-Game.World.prototype.randomArea = function(params) {
-    params = params || {};
-    // the defaults here should almost always result in a area size that
-    // is larger than the game screen.
-    // TODO: figure out a better algorithm for appropriate size now that user can resize the game screen
-    var meanWidth = params['meanWidth'] || Game.screenWidth * 1.5;
-    var meanHeight = params['meanHeight'] || Game.screenHeight * 1.5;
-
-    var stdWidth = params['stdWidth'] || meanWidth / 9;         // equivalent to Game.screenWidth / 6
-    var stdHeight = params['stdHeight'] || meanHeight / 9;      // if meanWidth is set via defaults
-
-    var rndWidth = randomNormalInt(meanWidth, stdWidth);
-    var rndHeight = randomNormalInt(meanHeight, stdHeight);
-
-    rndWidth = (rndWidth % 2 === 0) ? rndWidth : (rndWidth + 1);    // make sure height/width are even #s
-    rndHeight = (rndHeight % 2 === 0) ? rndHeight : (rndHeight + 1);
-
-    // TODO: random map type as well?
-
-    return {width: rndWidth, height: rndHeight};
 };

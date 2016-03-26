@@ -33,7 +33,10 @@ Game.Templates.Items = {
         name: 'rock',
         character: '•',
         foreground: '#678',
-        edible: false
+        edible: false,
+        throwable: {
+            thrownAttackValue: 1
+        }
     },
 
     apple: {
@@ -42,6 +45,9 @@ Game.Templates.Items = {
         foreground: '#f00',
         edible: {
             foodValue: 40
+        },
+        throwable: {
+            thrownAttackValue: 1
         }
     },
 
@@ -51,6 +57,9 @@ Game.Templates.Items = {
         foreground: '#fc0',
         edible: {
             foodValue: 50
+        },
+        throwable: {
+            thrownAttackValue: 1
         }
     },
 
@@ -61,6 +70,9 @@ Game.Templates.Items = {
         edible: {
             foodValue: 50,
             portions: 8
+        },
+        throwable: {
+            thrownAttackValue: 1
         }
     },
 
@@ -73,6 +85,9 @@ Game.Templates.Items = {
         equippable: {
             attackValue: 4,
             isWieldable: true
+        },
+        throwable: {
+            thrownAttackValue: 1
         }
         //noRandom: true
     },
@@ -159,6 +174,9 @@ Game.Templates.Items = {
         equippable: {
             defenseValue: 1,
             isWearable: true
+        },
+        throwable: {
+            thrownAttackValue: 1
         }
     },
 

@@ -23,11 +23,11 @@ var Game = {
         help: null,
         stats: null
     },
-    windowWidth: 800,
-    windowHeight: 600,
-    screenWidth: 40,
-    screenHeight: 24,
-    msgScreenHeight: 10,
+    windowWidth: 800,           // pixels
+    windowHeight: 600,          // pixels
+    screenWidth: 40,            // characters
+    screenHeight: 24,           // characters
+    msgScreenHeight: 10,        // characters
 
     // TODO: extra players, player creation routine
     player: null,
@@ -82,8 +82,7 @@ var Game = {
 
         // Create a helper function for binding to an event
         // and making it send that event to the screen
-        var game = this; // So that we don't lose this
-
+        var game = this;
         var bindEventToScreen = function(event) {
             window.addEventListener(event, function(e) {
                 // When an event is received, send it to the screen
@@ -201,21 +200,20 @@ var Game = {
 
         // pick a new area in the world to start in
         var startingLocation = world.getRandomLandLocation();
-        var newArea = world.addArea({  biome: startingLocation.biome,
-                                            parentX: startingLocation.x,
-                                            parentY: startingLocation.y,
-                                            dungeonChance: 100,
-                                            dungeonDepth: 3});
+        var newArea = world.generateWorldArea(startingLocation.x,
+                                              startingLocation.y,
+                                              { biome: startingLocation.biome,
+                                                dungeonChance: 100,
+                                                dungeonDepth: 1 });
 
         var startingArea = newArea.dungeon.levels[newArea.dungeonDepth];
         world.currentArea = startingArea;
 
         // add player to world
-        var playerStartLoc;
-        while (!playerStartLoc) {
-            playerStartLoc = startingArea.map.findOpenArea(1);
-        }
-        this.player.setLocation(playerStartLoc.x, playerStartLoc.y, startingArea);
+        var playerStartRoom = startingArea.rooms[startingArea.rooms.length - 1]
+        var playerStartX = (playerStartRoom.xStart + playerStartRoom.xEnd) >> 1;
+        var playerStartY = (playerStartRoom.yStart + playerStartRoom.yEnd) >> 1;
+        this.player.setLocation(playerStartX, playerStartY, startingArea);
 
         // Start the current area engine
         startingArea.engine.start();

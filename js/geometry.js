@@ -26,31 +26,45 @@ Game.Geometry.roomRect.prototype.getArea = function() {
     return this.getWidth() * this.getHeight();
 };
 
-Game.Geometry.drawLine = function(grid, startX, startY, endX, endY, penTile) {
+Game.Geometry.getLine = function(startX, startY, endX, endY) {
+// Bresenham's Line Algorithm
+
+    var points = [];
     var dx = Math.abs(endX - startX);
-    var sx = (startX < endX) ? 1 : -1;
     var dy = Math.abs(endY - startY);
+    var sx = (startX < endX) ? 1 : -1;
     var sy = (startY < endY) ? 1 : -1;
-    var err = (dx > dy ? dx : -dy) / 2;
+    var err = dx - dy;
+    var e;
 
     var x = startX;
     var y = startY;
     while (true) {
-        grid[x][y] = penTile;
+        points.push({x: x, y: y});
         if (x === endX && y === endY) {
             break;
         }
-        var e = err;
+        e = err * 2;
         if (e > -dx) {
             err -= dy;
             x += sx;
         }
-        if (e < dy) {
+        if (e < dx) {
             err += dx;
             y += sy;
         }
     }
+    return points;
 };
+Game.Geometry.drawLine = function(grid, startX, startY, endX, endY, penTile) {
+
+    var points = Game.Geometry.getLine(startX, startY, endX, endY);
+    for (var i = 0, p; i < points.length; i++) {
+        p = points[i];
+        grid[p.x][p.y] = penTile;
+    }
+};
+
 
 Game.Geometry.drawCircle = function(grid, centerX, centerY, radius, penTile) {
     // using 'midpoint circle algorithm' from Wikipedia page of the same name
@@ -76,8 +90,6 @@ Game.Geometry.drawCircle = function(grid, centerX, centerY, radius, penTile) {
         }
     }
 };
-
-
 Game.Geometry.fillCircle = function(grid, centerX, centerY, radius, fillTile) {
     // copied from the DrawFilledCircle algorithm
     // http://stackoverflow.com/questions/1201200/fast-algorithm-for-drawing-filled-circles
