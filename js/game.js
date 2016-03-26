@@ -9,6 +9,8 @@
 
 
 var Game = {
+    version: "2016.03.26-01",
+
     // DONE?: add extra displays
     // TODO: more displays for party/status - still a long way off
     displays: {
@@ -36,6 +38,9 @@ var Game = {
      */
     windowWidth: 1280,           // pixels
     windowHeight: 768,          // pixels
+    playDivWidth: 800,
+    statsDivWidth: 480,
+    playDivHeight: 0,
 
     /*
      +-------------------------------+
@@ -83,50 +88,9 @@ var Game = {
 
     init: function() {
 
-        this.displays.main = new ROT.Display({
-                                        width: this.playScreenWidth,
-                                        height: this.playScreenHeight,
-                                        fontSize: 14,
-                                        //fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
-                                        forceSquareRatio: true,
-                                        spacing: 1
-                                        });
 
-        this.displays.msg = new ROT.Display({
-                                        width: this.msgScreenWidth,
-                                        height: this.msgScreenHeight,
-                                        fontSize: 14,
-                                        //fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
-                                        forceSquareRatio: false
-                                        });
+        this.calcInitDisplaySize();
 
-        this.displays.help = new ROT.Display({
-                                        width: this.helpScreenWidth,
-                                        height: this.helpScreenHeight,
-                                        fontSize: 14,
-                                        //fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
-                                        forceSquareRatio: false
-                                        });
-
-        this.displays.stats = new ROT.Display({
-                                    width: this.statsScreenWidth,
-                                    height: this.statsScreenHeight,
-                                    fontSize: 14,
-                                    //fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
-                                    fontStyle: 'bold',
-                                    forceSquareRatio: false
-                                    });
-
-        this.displays.title = new ROT.Display({
-                                    width: this.titleScreenWidth,
-                                    height: this.titleScreenHeight,
-                                    fontSize: 14,
-                                    //fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
-                                    forceSquareRatio: false,
-                                    spacing: 1
-                                    });
-
-        this.recalcDisplaySize();
 
         // Create a helper function for binding to an event
         // and making it send that event to the screen
@@ -152,6 +116,108 @@ var Game = {
         // bindEventToScreen('keypress');
     },
 
+    calcInitDisplaySize: function() {
+
+        // find the right pixel height of play area and stats area displays
+        var availSize, playWidth, playHeight;
+
+        // get a window width/height that is 800x600 (or whatever we've defined as windowWidth/Height,
+        // or 90% of what's available (if < windowWidth x windowHeight).
+        this.windowWidth =
+            (window.innerWidth < this.windowWidth) ? Math.floor(window.innerWidth * 0.90) : this.windowWidth;
+        this.windowHeight =
+            (window.innerHeight < this.windowHeight) ? Math.floor(window.innerHeight * 0.90) : this.windowHeight;
+
+        // set the available playarea div and statsarea div sizes in pixels, based on window size
+        this.statsDivWidth = Math.floor(this.windowWidth * (1 / 3));
+        this.playDivWidth = this.windowWidth - this.statsDivWidth;
+
+        // set options for the displays
+        this.displays.main = new ROT.Display({
+                fontSize: 14,
+                //fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
+                forceSquareRatio: true,
+                spacing: 1
+            }
+        );
+
+        this.displays.msg = new ROT.Display({
+                fontSize: 14,
+                //fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
+                forceSquareRatio: false
+            }
+        );
+
+        this.displays.help = new ROT.Display({
+                fontSize: 14,
+                //fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
+                forceSquareRatio: false
+            }
+        );
+
+        this.displays.stats = new ROT.Display({
+                fontSize: 14,
+                //fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
+                fontStyle: 'bold',
+                forceSquareRatio: false
+            }
+        );
+
+        this.displays.title = new ROT.Display({
+                fontSize: 14,
+                //fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
+                forceSquareRatio: false,
+                spacing: 1
+            }
+        );
+
+        // calculate initial display sizes based on above options
+
+        // calculate character size of main display area based on playarea width and full window height
+        availSize = this.displays.main.computeSize(this.playDivWidth, this.windowHeight);  // returns [numCellsX, numCellsY]
+
+        // playscreen must be even dimensions on width and height
+        playHeight = availSize[1] - this.msgScreenHeight - this.helpScreenHeight;
+        if (playHeight % 2 !== 0) {
+            playHeight -= 1;
+        }
+        playWidth = availSize[0];
+        if (playWidth % 2 !== 0) {
+            playWidth -= 1;
+        }
+
+        this.playScreenWidth = playWidth;
+        this.playScreenHeight = playHeight;
+        this.displays.main.setOptions({ width: this.playScreenWidth, height: this.playScreenHeight });
+
+        // unfortunately, we have to do this separately for each display, since they may all be using
+        // slightly different font sizes/options and therefore have different available grid sizes
+
+        // stats display: using previously calculated pixel width
+        availSize = this.displays.stats.computeSize(this.statsDivWidth, this.windowHeight);
+        this.statsScreenWidth = availSize[0];
+        this.statsScreenHeight =
+            Math.min((availSize[1] - this.msgScreenHeight - this.helpScreenHeight), this.playScreenHeight);
+        this.displays.stats.setOptions({ width: this.statsScreenWidth, height: this.statsScreenHeight });
+
+        // message display is easy, it's the full width and a pre-defined character height
+        availSize = this.displays.msg.computeSize(this.windowWidth, this.windowHeight);
+        this.msgScreenWidth = availSize[0];
+        this.displays.msg.setOptions({ width: this.msgScreenWidth, height: this.msgScreenHeight });
+
+        // the help display line is even easier: full width, height of 1
+        availSize = this.displays.help.computeSize(this.windowWidth, this.windowHeight);
+        this.helpScreenWidth = availSize[0];
+        this.displays.help.setOptions({ width: this.helpScreenWidth, height: 1 });
+
+        // title screen: full width, full height
+        availSize = this.displays.title.computeSize(this.windowWidth, this.windowHeight);
+        this.titleScreenWidth = availSize[0];
+        this.titleScreenHeight = availSize[1];
+        this.displays.title.setOptions({ width: this.titleScreenWidth, height: this.titleScreenHeight });
+
+    },
+
     recalcDisplaySize: function() {
         // called in Game.init and in window.onresize
         if (!this.displays.main || this.displays.main === null) {
@@ -160,22 +226,15 @@ var Game = {
 
         var availSize, playWidth, playHeight;
 
-        // get a window width/height that is 800x600 (or whatever we've defined as windowWidth/Height,
-        // or 90% of what's available (if < windowWidth x windowHeight).
-        this.windowWidth = (window.innerWidth < this.windowWidth) ? Math.floor(window.innerWidth * 0.90) : this.windowWidth;
-        this.windowHeight = (window.innerHeight < this.windowHeight) ? Math.floor(window.innerHeight * 0.90) : this.windowHeight;
+        // calculate character size of main display area based on playarea width and playarea height
+        availSize = this.displays.main.computeSize(this.playDivWidth, this.playDivHeight);  // returns [numCellsX, numCellsY]
 
-        availSize = this.displays.main.computeSize(this.windowWidth, this.windowHeight);  // returns [numCellsX, numCellsY]
-
-        playHeight = availSize[1] - this.msgScreenHeight;
+        // playscreen must be even dimensions on width and height
+        playHeight = availSize[1];
         if (playHeight % 2 !== 0) {
-            playHeight += 1;
+            playHeight -= 1;
         }
-
-        // playScreen should take up ~2/3 of available width
-        // also, playScreenWidth *MUST* be even (due to limitations of map gen)
-
-        playWidth = Math.ceil(availSize[0] * (2/3));
+        playWidth = availSize[0];
         if (playWidth % 2 !== 0) {
             playWidth -= 1;
         }
@@ -189,30 +248,7 @@ var Game = {
         this.playScreenHeight = playHeight;
         this.displays.main.setOptions({width: this.playScreenWidth, height: this.playScreenHeight});
 
-        // unfortunately, we have to do this separately for each display, since they may all be using
-        // slightly different font sizes/options and therefore have different available grid sizes
-
-        // stats display: ~1/3 of available width
-        availSize = this.displays.stats.computeSize(this.windowWidth, this.windowHeight);
-        this.statsScreenWidth = Math.max(Math.floor(availSize[0] * (1 / 3)), 20);
-        this.statsScreenHeight = Math.max((availSize[1] - this.msgScreenHeight), playHeight);
-        this.displays.stats.setOptions({ width: this.statsScreenWidth, height: this.statsScreenHeight });
-
-        // message display is easy, it's the full width and a pre-defined character height
-        availSize = this.displays.msg.computeSize(this.windowWidth, this.windowHeight);
-        this.msgScreenWidth = availSize[0];
-        this.displays.msg.setOptions({width: this.msgScreenWidth, height: this.msgScreenHeight});
-
-        // the help display line is even easier: full width, height of 1
-        availSize = this.displays.help.computeSize(this.windowWidth, this.windowHeight);
-        this.helpScreenWidth = availSize[0];
-        this.displays.help.setOptions({width: this.helpScreenWidth, height: 1});
-
-        // title screen: full width, full height
-        availSize = this.displays.title.computeSize(this.windowWidth, this.windowHeight);
-        this.titleScreenWidth = availSize[0];
-        this.titleScreenHeight = availSize[1];
-        this.displays.title.setOptions({ width: this.titleScreenWidth, height: this.titleScreenHeight });
+        // none of the other displays should be changing after the initial setting
 
         return true;
     },
@@ -317,12 +353,19 @@ window.onload = function() {
 
         // TODO: additional displays
 
-        /*
-        Game.switchScreen(Game.Screen.helpLine, 'help');
-        Game.switchScreen(Game.Screen.statsScreen, 'stats');
-        Game.switchScreen(Game.Screen.messageScreen, 'msg');
-        Game.switchScreen(Game.Screen.playScreen, 'main');
-        */
+
+        // after displays are appended to the DOM, we should have a good idea of
+        // the correct pixel height of the play area (accounting for help and message displays)
+        Game.playDivHeight = document.getElementById("playDiv").offsetHeight;
+        // this will be stored and used anytime the play area display size is recalculated
+        // we also need to recalculate the stats area height, since we shouldn't be changing it later
+
+        var availSize = Game.displays.stats.computeSize(Game.statsDivWidth, Game.playDivHeight);
+        Game.statsScreenWidth = availSize[0];
+        Game.statsScreenHeight = availSize[1];
+        Game.displays.stats.setOptions({ width: Game.statsScreenWidth, height: Game.statsScreenHeight });
+
+
         // Load the start screen
         Game.switchScreen(Game.Screen.startScreen, 'title');
 
