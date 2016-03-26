@@ -9,7 +9,7 @@
 
 Game.Templates.Monsters = {
 
-    /* The defaults from the Game.Creature constructor;
+    /* Below are the defaults from the Game.Creature constructor;
         these will be used if not defined in a template
 
      var defaults = {

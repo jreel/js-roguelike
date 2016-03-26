@@ -84,8 +84,8 @@ Game.Area.prototype.scatterItems = function(amount) {
     // set reasonable, pseudo-random defaults for amount
     if (!amount) {
         var mapArea = this.width * this.height;
-        var areaPerItem = 2 * randomNormalInt(200, 50);
-        amount = Math.max(Math.round(mapArea / areaPerItem, 5));
+        var areaPerItem = randomNormalInt(100, 20);
+        amount = Math.max(Math.round(mapArea / areaPerItem), 10);
     }
 
     var itemPop = randomNormalInt(amount, 1);
@@ -182,33 +182,6 @@ Game.Area.prototype.addEntity = function(entity) {
 Game.Area.prototype.placeEntityAtRandomPosition = function(entity) {
     var position = this.map.getRandomFloorPosition();
     this.updateEntityLocation(entity, position.x, position.y);
-};
-
-Game.Area.prototype.placeEntityAtPosition = function(x, y, entity) {
-    // tries to put the entity as close to the given x, y as possible
-    // based on available empty floor tiles
-    if (!this.map.isEmptyFloor(x, y)) {
-
-        var foundEmptyTile = false;
-        var radius = 1;
-        var tilesToCheck, tile, len;
-
-        while (!foundEmptyTile) {
-            tilesToCheck = this.map.getTilesWithinRadius(x, y, radius);
-            len = tilesToCheck.length;
-            for (var i = 0; i < len; i++) {
-                tile = tilesToCheck[i];
-                if (this.map.isEmptyFloor(tile.x, tile.y)) {
-                    foundEmptyTile = true;
-                    x = tile.x;
-                    y = tile.y;
-                    break;
-                }
-            }
-            radius++;
-        }
-    }
-    this.updateEntityLocation(entity, x, y);
 };
 
 Game.Area.prototype.removeEntity = function(entity) {

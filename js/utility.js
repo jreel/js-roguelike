@@ -252,6 +252,12 @@ function applyDefaults(template, defaults) {
         var key = keys[k];
         if (!template.hasOwnProperty(key)) {
             template[key] = defaults[key];
+
+            // try to do a deep copy as well
+            if ((typeof defaults[key] == 'object') && (notNull(defaults[key]))) {
+                applyDefaults(template[key], defaults[key]);
+            }
+
         }
     }
     return template;

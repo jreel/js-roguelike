@@ -28,7 +28,9 @@ Game.Player = function(template) {
             baseDefenseValue: 0
         },
         attacker: {
-            baseAttackValue: 1
+            baseAttackValue: 1,
+            isRangedAttacker: true,
+            canThrowItems: true
         },
         sight: {
             sightRadius: 5
@@ -38,7 +40,7 @@ Game.Player = function(template) {
             inventorySlots: 22
         },
         foodEater: {
-            maxFullness: 2000,
+            maxFullness: 1000,
             hungerRate: 1
         },
         armorUser: true,

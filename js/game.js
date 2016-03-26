@@ -23,11 +23,11 @@ var Game = {
         help: null,
         stats: null
     },
-    windowWidth: 800,
-    windowHeight: 600,
-    screenWidth: 40,
-    screenHeight: 24,
-    msgScreenHeight: 10,
+    windowWidth: 800,           // pixels
+    windowHeight: 600,          // pixels
+    screenWidth: 40,            // characters
+    screenHeight: 24,           // characters
+    msgScreenHeight: 10,        // characters
 
     // TODO: extra players, player creation routine
     player: null,
@@ -82,8 +82,7 @@ var Game = {
 
         // Create a helper function for binding to an event
         // and making it send that event to the screen
-        var game = this; // So that we don't lose this
-
+        var game = this;
         var bindEventToScreen = function(event) {
             window.addEventListener(event, function(e) {
                 // When an event is received, send it to the screen

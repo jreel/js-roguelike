@@ -122,7 +122,7 @@ Game.Tileset = function(catalog) {
         },
 
         water: {
-            description: 'Murky blue water',
+            description: 'Murky water',
             character: '≈',
             foreground: '#08c',
             isWalkable: false,
@@ -149,8 +149,8 @@ Game.Tileset = function(catalog) {
 
 Game.Tilesets = {};
 
-// this one is constructed manually because it's so different to
-// the regular "area" tilesets
+// the worldMap tileset is constructed manually because it's so different
+// from the regular "area" tilesets
 Game.Tilesets.worldMap = {
 
     POLAR_ICECAP: new Game.Tile({
@@ -197,7 +197,7 @@ Game.Tilesets.worldMap = {
         passesLight: true
     }
     ),
-    SNOWCAP: new Game.Tile({
+    SNOWCAPPED: new Game.Tile({
         name: '',
         description: 'Snowcap: the snowy peak of a mountain',
         character: '^',
@@ -386,7 +386,7 @@ Game.Tilesets.worldMap = {
     ),
     DUSTBOWL: new Game.Tile({
         name: '',
-        description: 'Dustbowl: a region that may have been a grassland once, but is now just dirt and dust',
+        description: 'Dustbowl: a region that may have been a grassland once, but is now just dry dirt and dust',
         character: '.',
         foreground: '#BDB76B',
         background: '#000',
@@ -459,6 +459,7 @@ Game.Tilesets.worldMap = {
  (note that these use the same constructor, and so are still
  defined in terms of the "dungeon" tilesets)
  */
+// TODO: (but possibly in the tile drawing routine) random slight variation in color
 Game.Tilesets.polar = new Game.Tileset({
     ground: { character: '~', foreground: '#EEFFFF', background: '#D0E0F0' },
     terrain: { character: 'Ѧ', foreground: '#A0D0DD', background: '#D0E0F0', passesLight: false },

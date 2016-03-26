@@ -81,54 +81,108 @@ Game.BiomeTypes = {
         // this shouldn't screw up any of the normal biome definitions
         this.biomes.WORLD = ~this.ANY_ALL;
 
-        // now the actual biomes
+        // polar icecap = arctic waters & low-lands
         this.biomes.POLAR_ICECAP = this.ANY_WATER | this.LOW_LAND | this.temperature.ARCTIC | this.ANY_PRECIPITATION;
+        // glaciers = arctic high-lands
         this.biomes.GLACIER = this.HIGH_LAND | this.temperature.ARCTIC | this.ANY_PRECIPITATION;
+
+        // non-polar water areas:
         this.biomes.DEEP_WATER = this.elevation.DEEP_WATER | this.ANY_NONPOLAR | this.ANY_PRECIPITATION;
         this.biomes.SHALLOW_WATER = this.elevation.SHALLOW_WATER | this.ANY_NONPOLAR | this.ANY_PRECIPITATION;
 
-        // un-forested mountain areas
-        this.biomes.SNOWCAP = this.elevation.SNOWCAP | this.ANY_COLD | this.ANY_PRECIPITATION;
-        // alpine = above the treeline, but ground vegetation still possible
+
+        // high-altitude mountain areas (snowcap and alpine altitudes)
+        /*
+             wet  <-------------->  dry
+         +----------+----------+----------+      cold
+         |snowcapped|snowcapped|snowcapped|       |
+         | mountain | mountain |   crag   |       |
+         +----------+----------+----------+       |
+         |snowcapped|snowcapped|snowcapped|       |
+         | mountain | mountain |   crag   |       |
+         +----------+----------+----------+       |
+         | mountain | mountain | badlands |       |
+         | mountain | mountain | badlands |       |
+         +----------+----------+----------+      hot
+         */
+        // un-forested high-altitude mountain areas (above the snowline)
+        this.biomes.SNOWCAPPED = this.elevation.SNOWCAP | this.ANY_COLD | this.ANY_PRECIPITATION;
+        // mountain areas with possible ground vegetation
         this.biomes.MOUNTAIN = this.elevation.ALPINE | this.elevation.SNOWCAP | this.ANY_NONPOLAR | this.ANY_NONDRY;
         // mesas, plateaus, etc
         this.biomes.BADLANDS = this.elevation.ALPINE | this.elevation.SNOWCAP | this.ANY_HOT | this.ANY_DRY;
         // cold version of the above
         this.biomes.CRAG = this.elevation.ALPINE | this.ANY_COLD | this.ANY_DRY;
 
+
         // coastal or very low-elevation areas
+        /*
+             wet  <-------------->  dry
+         +----------+----------+----------+      cold
+         |marshland |cold_beach|cold_beach|       |
+         +----------+----------+----------+       |
+         |marshland |cold_beach|cold_beach|       |
+         +----------+----------+----------+       |
+         |  swamp   |  beach   |  beach   |       |
+         +----------+----------+----------+      hot
+         */
         this.biomes.COLD_BEACH = this.elevation.COASTAL | this.ANY_COLD | this.ANY_NONWET;
         this.biomes.BEACH = this.elevation.COASTAL | this.ANY_HOT | this.ANY_NONWET;
         this.biomes.MARSHLAND = this.elevation.COASTAL | this.ANY_COLD | this.ANY_WET;
         this.biomes.SWAMP = this.elevation.COASTAL | this.ANY_HOT | this.ANY_WET;
 
+
         // GROWTH_AREA = plains, hills, base of mountains
-        // high latitude, low temperature
+        /*
+            RAINY      HUMID     MODERATE   SEMIARID     ARID
+         +----------+----------+----------+----------+----------+
+         |  tundra  |  tundra  |  tundra  | barrens  | barrens  |   SUBARCTIC
+         +----------+----------+----------+----------+----------+
+         |  taiga   |  taiga   |  taiga   |cold_scrub|colddesert|   BOREAL
+         +----------+----------+----------+----------+----------+
+         |coniferous|broadleaf |shrubland |grassland | dustbowl |   TEMPERATE
+         +----------+----------+----------+----------+----------+
+         |coniferous|broadleaf |shrubland |  scrub   |  desert  |   SUBTROPICAL
+         +----------+----------+----------+----------+----------+
+         |  jungle  |  jungle  | savanna  | savanna  |  desert  |   TROPICAL
+         +----------+----------+----------+----------+----------+
+         */
+        // high latitude, low temperature areas. Tundra if sufficient moisture, barren if not.
         this.biomes.TUNDRA = this.GROWTH_AREA | this.temperature.SUBARCTIC | this.ANY_NONDRY;
         this.biomes.BARRENS = this.GROWTH_AREA | this.temperature.SUBARCTIC | this.ANY_DRY;
 
+
+        // forested areas; type of forest depends on temperature and precipitation
+
         // taiga = boreal forest (coniferous)
         this.biomes.TAIGA = this.GROWTH_AREA | this.temperature.BOREAL | this.ANY_NONDRY;
-        this.biomes.COLD_SCRUBLAND = this.GROWTH_AREA | this.temperature.BOREAL | this.precipitation.SEMIARID;
-        this.biomes.COLD_DESERT = this.GROWTH_AREA | this.temperature.BOREAL | this.precipitation.ARID;
-
-        // temperate types
+        // "coniferous forest" is a "temperate rain forest", such as the Pacific Northwest redwoods.
         this.biomes.CONIFEROUS_FOREST =
             this.GROWTH_AREA | this.temperature.TEMPERATE | this.temperature.SUBTROPICAL | this.precipitation.RAINY;
+        // "broadleaf forest" is a temperate deciduous forest
         this.biomes.BROADLEAF_FOREST =
             this.GROWTH_AREA | this.temperature.TEMPERATE | this.temperature.SUBTROPICAL | this.precipitation.HUMID;
+        // "jungle" is a tropical rainforest
+        this.biomes.JUNGLE = this.GROWTH_AREA | this.temperature.TROPICAL | this.ANY_WET;
+
+
+        // non-forested areas: those with insufficient precipitation to support tree life
+        // may range from shrub/scrub/grassland to desert
+
+        // first, the moderate or semi-arid precipitation types
+        this.biomes.COLD_SCRUBLAND = this.GROWTH_AREA | this.temperature.BOREAL | this.precipitation.SEMIARID;
         this.biomes.SHRUBLAND =
             this.GROWTH_AREA | this.temperature.TEMPERATE | this.temperature.SUBTROPICAL | this.precipitation.MODERATE;
         this.biomes.GRASSLAND = this.GROWTH_AREA | this.temperature.TEMPERATE | this.precipitation.SEMIARID;
-        this.biomes.DUSTBOWL = this.GROWTH_AREA | this.temperature.TEMPERATE | this.precipitation.ARID;
-
-        // subtropical types
         this.biomes.SCRUBLAND = this.GROWTH_AREA | this.temperature.SUBTROPICAL | this.precipitation.SEMIARID;
+        this.biomes.SAVANNA =
+            this.GROWTH_AREA | this.temperature.TROPICAL | this.precipitation.MODERATE | this.precipitation.SEMIARID;
+
+        // finally, the arid (desert) areas
+        this.biomes.COLD_DESERT = this.GROWTH_AREA | this.temperature.BOREAL | this.precipitation.ARID;
+        this.biomes.DUSTBOWL = this.GROWTH_AREA | this.temperature.TEMPERATE | this.precipitation.ARID;
         this.biomes.DESERT = this.GROWTH_AREA | this.ANY_HOT | this.precipitation.ARID;
 
-        // tropical types
-        this.biomes.JUNGLE = this.GROWTH_AREA | this.temperature.TROPICAL | this.ANY_WET;
-        this.biomes.SAVANNA = this.GROWTH_AREA | this.temperature.TROPICAL | this.precipitation.MODERATE | this.precipitation.SEMIARID;
 
         return this;
     }
@@ -170,7 +224,7 @@ Game.BiomeArea = {
         hungerMultiplier: 1
     },
 
-    SNOWCAP: {
+    SNOWCAPPED: {
         tileset: Game.Tilesets.snowcap,
         builder: Game.Generators.terrainSparse,
         sightRadiusMultiplier: 1.5,

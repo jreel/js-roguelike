@@ -45,13 +45,36 @@ Game.Entity.prototype.setLocation = function(x, y, area) {
         oldArea = area;
     }
 
+    // if we are not passing in an area, assume our current area
+    if (!area) {
+        area = this.area;
+    }
+
+    // check that we are being placed in an empty location
+    // if not, try to find one as close as possible
+    if (!area.map.isEmptyFloor(x, y)) {
+        var foundEmptyTile = false;
+        var radius = 1;
+        var tilesToCheck, tile, len;
+
+        while (!foundEmptyTile) {
+            tilesToCheck = area.map.getTilesWithinRadius(x, y, radius);
+            len = tilesToCheck.length;
+            for (var i = 0; i < len; i++) {
+                tile = tilesToCheck[i];
+                if (area.map.isEmptyFloor(tile.x, tile.y)) {
+                    foundEmptyTile = true;
+                    x = tile.x;
+                    y = tile.y;
+                    break;
+                }
+            }
+            radius++;
+        }
+    }
+
     // handle the entities key deletions and additions
     oldArea.updateEntityLocation(this, x, y, area);
-    /*
-    area.placeEntityAtPosition(x, y, this);
-    this.x = x;
-    this.y = y;
-    */
 
     // player-specific code is in the setLocation method of the Player prototype
 

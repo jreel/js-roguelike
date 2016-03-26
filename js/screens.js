@@ -181,7 +181,7 @@ Game.Screen.playScreen = {
             }
             else if (cmd === ROT.VK_I) {          // inventory screen
                 this.showItemsSubScreen(Game.Screen.inventoryScreen, player.inventory,
-                                            "You are not carrying anything.");
+                                        "You are not carrying anything.");
                 return;
             }
             else if (cmd === ROT.VK_D) {          // drop screen
@@ -190,25 +190,52 @@ Game.Screen.playScreen = {
                 return;
             }
             else if (cmd === ROT.VK_E) {      // eat screen
-                this.showItemsSubScreen(Game.Screen.eatScreen, player.inventory,
-                                        "You have nothing to eat.");
+                if (player.eatsFood) {
+                    this.showItemsSubScreen(Game.Screen.eatScreen, player.inventory,
+                                            "You have nothing to eat.");
+                }
+                else {
+                    Game.sendMessage('danger', player, "You aren't able to do that right now.")
+                }
                 return;
             }
             else if (cmd === ROT.VK_W) {      // wear/wield screen
-                this.showItemsSubScreen(Game.Screen.equipScreen, player.inventory,
-                                        "You have nothing to wear or wield.");
+                if (player.canWearArmor || player.canWieldWeapons) {
+                    this.showItemsSubScreen(Game.Screen.equipScreen, player.inventory,
+                                            "You have nothing to wear or wield.");
+                }
+                else {
+                    Game.sendMessage('danger', player, "You aren't able to do that right now.")
+                }
                 return;
             }
             else if (cmd === ROT.VK_X) {      // examine screen
-                this.showItemsSubScreen(Game.Screen.examineScreen, player.inventory,
-                                        "You have nothing to examine.");
+                if (player.hasSight) {
+                    this.showItemsSubScreen(Game.Screen.examineScreen, player.inventory,
+                                            "You have nothing to examine.");
+                }
+                else {
+                    Game.sendMessage('danger', player, "You aren't able to do that right now.")
+                }
                 return;
             }
             else if (cmd === ROT.VK_L) {      // look screen
-                // setup the look screen
-                var offsets = this.getMapCoordinates(0, 0);
-                Game.Screen.lookScreen.setup(player, player.x, player.y, offsets.x, offsets.y);
-                this.setSubScreen(Game.Screen.lookScreen);
+                if (player.hasSight) {
+                    this.showTargetSubScreen(Game.Screen.lookScreen);
+                }
+                else {
+                    Game.sendMessage('danger', player, "You aren't able to do that right now.")
+                }
+                return;
+            }
+            else if (cmd === ROT.VK_T) {    // throw screen
+                if (player.canThrowItems) {
+                    this.showItemsSubScreen(Game.Screen.throwItemScreen, player.inventory,
+                                            "You have nothing to throw.");
+                }
+                else {
+                    Game.sendMessage('danger', player, "You aren't able to do that.")
+                }
                 return;
             }
             else if (cmd === ROT.VK_H) {      // help screen
@@ -423,6 +450,24 @@ Game.Screen.playScreen = {
             Game.sendMessage('warning', player, emptyMessage);
             Game.refresh();
         }
+    },
+
+    showTargetSubScreen: function(subScreen, extraOptions) {
+        extraOptions = extraOptions || {};
+        var item = extraOptions['item'] || null;
+        var spell = extraOptions['spell'] || null;
+        var ranged = extraOptions['ranged'] || null;
+
+        var offsets = this.getMapCoordinates(0, 0);
+        var player = Game.player;
+        subScreen.setup(player, player.x, player.y, offsets.x, offsets.y);
+
+        // if we have extra options, pass them along
+        if (item) {
+            subScreen.passItem(item);
+        }
+
+        this.setSubScreen(subScreen);
     }
 
 };
@@ -1108,11 +1153,9 @@ Game.Screen.examineScreen = new Game.Screen.ItemListScreen({
         return item;
     },
     ok: function(selectedItems) {
-        var keys = Object.keys(selectedItems);
-        if (keys.length > 0) {
-            var item = selectedItems[keys[0]];
-            Game.sendMessage('info', this.player, "It's %s (%s).", item.describeA(), item.getDetails());
-        }
+        var key = Object.keys(selectedItems)[0];
+        var item = selectedItems[key];
+        Game.sendMessage('info', this.player, "It's %s (%s).", item.describeA(), item.getDetails());
         return true;
     },
     handleInput: function(inputType, inputData) {
@@ -1137,17 +1180,25 @@ Game.Screen.examineScreen = new Game.Screen.ItemListScreen({
             }
         }
     }
-
 });
 
 Game.Screen.TargetingScreen = function(template) {
     template = template || {};
+    // in case we needed to store or pass along any parameters
+    this.item = template['item'] || null;
+    this.itemKey = template['itemKey'] || null;
+    this.target = template['target'] || null;
+
+    // whether we've picked a valid target
+    this.validTarget = false;
+
+    this.points = [];   // so we don't have to recalculate for render, caption, etc.
+
     // by default, the ok function does nothing, and doesn't consume a turn.
     this.okFunction = template['ok'] || function(x, y) { return false; };
     // the default caption function simply returns an empty string.
     this.captionFunction = template['caption'] || function(x, y) { return ''; };
 };
-
 Game.Screen.TargetingScreen.prototype.setup = function(player, startX, startY, offsetX, offsetY) {
     this.player = player;
     this.area = player.area;
@@ -1169,18 +1220,53 @@ Game.Screen.TargetingScreen.prototype.setup = function(player, startX, startY, o
                             });
     this.visibleCells = visibleCells;
 };
+Game.Screen.TargetingScreen.prototype.passItem = function(item) {
+    this.item = item;
+};
+Game.Screen.TargetingScreen.prototype.handleInput = function(inputType, inputData) {
+    var cmd = inputData.keyCode;
+    // move the cursor
+    if (inputType == 'keydown') {
+        if (cmd === ROT.VK_LEFT) {
+            this.moveCursor(-1, 0);
+        }
+        else if (cmd === ROT.VK_RIGHT) {
+            this.moveCursor(1, 0);
+        }
+        else if (cmd === ROT.VK_UP) {
+            this.moveCursor(0, -1);
+        }
+        else if (cmd === ROT.VK_DOWN) {
+            this.moveCursor(0, 1);
+        }
+        else if (cmd === ROT.VK_ESCAPE) {
+            this.points = [];
+            Game.Screen.playScreen.setSubScreen(undefined);
+        }
+        else if (cmd === ROT.VK_RETURN) {
+            this.executeOkFunction();
+        }
+    }
+    Game.refresh();
+};
+Game.Screen.TargetingScreen.prototype.moveCursor = function(dx, dy) {
+    // make sure we stay within bounds
+    // TODO: scrolling?
+    this.cursorX = Math.max(0, Math.min(this.cursorX + dx, Game.screenWidth));
+    this.cursorY = Math.max(0, Math.min(this.cursorY + dy, Game.screenHeight - 1));
 
+    this.points = Game.Geometry.getLine(this.startX, this.startY, this.cursorX, this.cursorY);
+};
 Game.Screen.TargetingScreen.prototype.render = function(display) {
-    // render the usual playscreen map
     Game.Screen.playScreen.renderMap.call(Game.Screen.playScreen, display);
 
     // draw a line from the start to the cursor
-    var points = Game.Geometry.getLine(this.startX, this.startY, this.cursorX, this.cursorY);
+    //var points = Game.Geometry.getLine(this.startX, this.startY, this.cursorX, this.cursorY);
     var map = this.area.map;
     // highlight cells along the line
     var p, mapX, mapY, entity, items, tile, char, fg, bg;
-    for (var i = 0, len = points.length; i < len; i++) {
-        p = points[i];
+    for (var i = 0, len = this.points.length; i < len; i++) {
+        p = this.points[i];
         mapX = p.x + this.offsetX;
         mapY = p.y + this.offsetY;
         bg = '#f6f';
@@ -1213,42 +1299,10 @@ Game.Screen.TargetingScreen.prototype.render = function(display) {
     }
 
     // render a caption at the bottom of the screen
-    display.drawText(0, Game.screenHeight - 1, this.captionFunction(this.cursorX + this.offsetX, this.cursorY + this.offsetY));
+    display.drawText(0, Game.screenHeight - 1,
+                     this.captionFunction(this.cursorX + this.offsetX, this.cursorY + this.offsetY)
+    );
 };
-
-Game.Screen.TargetingScreen.prototype.handleInput = function(inputType, inputData) {
-    var cmd = inputData.keyCode;
-    // move the cursor
-    if (inputType == 'keydown') {
-        if (cmd === ROT.VK_LEFT) {
-            this.moveCursor(-1, 0);
-        }
-        else if (cmd === ROT.VK_RIGHT) {
-            this.moveCursor(1, 0);
-        }
-        else if (cmd === ROT.VK_UP) {
-            this.moveCursor(0, -1);
-        }
-        else if (cmd === ROT.VK_DOWN) {
-            this.moveCursor(0, 1);
-        }
-        else if (cmd === ROT.VK_ESCAPE) {
-            Game.Screen.playScreen.setSubScreen(undefined);
-        }
-        else if (cmd === ROT.VK_RETURN) {
-            this.executeOkFunction();
-        }
-    }
-    Game.refresh();
-};
-
-Game.Screen.TargetingScreen.prototype.moveCursor = function(dx, dy) {
-    // make sure we stay within bounds
-    // TODO: scrolling?
-    this.cursorX = Math.max(0, Math.min(this.cursorX + dx, Game.screenWidth));
-    this.cursorY = Math.max(0, Math.min(this.cursorY + dy, Game.screenHeight - 1));
-};
-
 Game.Screen.TargetingScreen.prototype.executeOkFunction = function() {
     // switch back to the play screen
     Game.Screen.playScreen.setSubScreen(undefined);
@@ -1296,6 +1350,205 @@ Game.Screen.lookScreen = new Game.Screen.TargetingScreen({
         }
     }
 });
+
+Game.Screen.throwItemScreen = new Game.Screen.ItemListScreen({
+    title: 'Throw which item?',
+    caption: '(letter key to select item, [Esc] to cancel)',
+    canSelect: true,
+    canSelectMultiple: false,
+    filter: function(item) {
+        return item && item.isThrowable;
+    },
+    ok: function(selectedItems) {
+        var key = Object.keys(selectedItems)[0];
+        var item = selectedItems[key];
+
+        // when item is selected, call the targeting screen
+        Game.Screen.playScreen.showTargetSubScreen(Game.Screen.throwAtTargetScreen,
+                                                    {item: item, itemKey: key});
+
+        return true;
+    },
+    handleInput: function(inputType, inputData) {
+        if (inputType === 'keydown') {
+            var keyCode = inputData.keyCode;
+
+            // if escape, close the screen
+            if (keyCode === ROT.VK_ESCAPE) {
+                Game.Screen.playScreen.setSubScreen(undefined);
+            }
+
+            // handle pressing a letter to select an item
+            else if (keyCode >= ROT.VK_A && keyCode <= ROT.VK_Z) {
+                // check if keypress maps to a valid item by subtracting 'a' from
+                // the keyCode to know what letter of the alphabet was pressed
+                var index = keyCode - ROT.VK_A;
+                if (this.items[index]) {
+                    // select the item and exit screen
+                    this.selectedIndices[index] = true;
+                    this.executeOkFunction();
+                }
+            }
+        }
+    }
+});
+
+Game.Screen.throwAtTargetScreen = new Game.Screen.TargetingScreen({
+    // throw at anything that isn't blocked by walls.
+
+    // okFunction: this is done when [Enter] is pressed on the targeting screen
+    // should pass to throwItem or throwAttack as needed
+    // the player's turn ends if this returns true
+    ok: function(x, y) {
+        // x,y is the map x,y
+
+        // return false if Enter is pressed without a valid target
+
+        var player = this.player;
+        var area = this.area;
+
+        // if target x,y is not in visible range, return false
+        if (!this.visibleCells[x + ',' + y]) {
+            Game.sendMessage('warning', player, "You need to be able to see where you are throwing.");
+            this.validTarget = false;
+            return false;
+        }
+
+        // if the path between us and target x,y is not clear, return false
+        //var path = Game.Geometry.getLine(player.x, player.y, mapX, mapY);
+        var map = area.map;
+        var mapX, mapY;
+        for (var p = 0, len = this.points.length; p < len; p++) {
+            // convert from screen points to map coords
+            mapX = this.points[p].x + this.offsetX;
+            mapY = this.points[p].y + this.offsetY;
+
+            if (!map.getTile(mapX, mapY).passesLight) {
+                Game.sendMessage('warning', player, "You can't throw through walls!");
+                this.validTarget = false;
+                return false;
+            }
+        }
+
+        // do a throwAttack (entity is checked for in that routine)
+        return (player.thrownAttack(mapX, mapY, this.itemKey));
+
+    },
+    // captionFunction: should show the target and the range?
+    caption: function(x, y) {
+        // only tell us about visible cells
+        if (this.visibleCells[x + ',' + y]) {
+
+            var distance = this.points.length - 1;
+
+            var entity = this.area.getEntityAt(x, y);
+            if (entity) {
+                return String.format('%s - %s (distance %s)',
+                                     entity.getGlyph(),
+                                     entity.describe(),
+                                     distance);
+            }
+            else {
+                var tile = this.area.map.getTile(x, y);
+                return String.format('%s - %s (distance %s)',
+                                     tile.getGlyph(),
+                                     tile.description,
+                                     distance);
+            }
+        }
+        else {
+            return '';
+        }
+    }
+});
+// let's implement our own moveCursor method so we can't target through walls
+Game.Screen.throwAtTargetScreen.moveCursor = function(dx, dy) {
+    // make sure we stay within bounds
+    this.cursorX = Math.max(0, Math.min(this.cursorX + dx, Game.screenWidth));
+    this.cursorY = Math.max(0, Math.min(this.cursorY + dy, Game.screenHeight - 1));
+
+    this.points = Game.Geometry.getLine(this.startX, this.startY, this.cursorX, this.cursorY);
+
+    var map = this.area.map;
+    var p, mapX, mapY;
+    var lastX = this.startX;
+    var lastY = this.startY;
+    for (var i = 0, len = this.points.length; i < len; i++) {
+        p = this.points[i];
+        mapX = p.x + this.offsetX;
+        mapY = p.y + this.offsetY;
+
+        // if the path between us and target is not clear,
+        // or if target is not in visible range, break
+        if (!map.getTile(mapX, mapY).passesLight || !this.visibleCells[mapX + ',' + mapY]) {
+            break;
+        }
+        lastX = p.x;
+        lastY = p.y;
+    }
+    this.cursorX = lastX;
+    this.cursorY = lastY;
+    this.points = Game.Geometry.getLine(this.startX, this.startY, this.cursorX, this.cursorY);
+};
+// let's implement our own render method so it's clear we can't target through walls
+Game.Screen.throwAtTargetScreen.render = function(display) {
+    // render the usual play screen map
+    Game.Screen.playScreen.renderMap.call(Game.Screen.playScreen, display);
+
+    // draw a line from the start to the cursor
+    //var points = Game.Geometry.getLine(this.startX, this.startY, this.cursorX, this.cursorY);
+    var map = this.area.map;
+    // highlight cells along the line
+    var p, mapX, mapY, entity, items, tile, char, fg, bg = '#f6f';;
+    var okCheck = true;
+
+    // highlight ourself first, then loop through points
+    display.draw(this.startX, this.startY, this.player.character, this.player.foreground, bg);
+
+    for (var i = 0, len = this.points.length; i < len; i++) {
+        p = this.points[i];
+        mapX = p.x + this.offsetX;
+        mapY = p.y + this.offsetY;
+
+        // if the path between us and target is not clear, break
+        if (!map.getTile(mapX, mapY).passesLight) {
+            okCheck = false;
+            break;
+        }
+
+        // if target is not in visible range, break
+        if (!this.visibleCells[mapX + ',' + mapY]) {
+            okCheck = false;
+            break;
+        }
+
+        // otherwise, render the line
+        tile = map.getTile(mapX, mapY);
+        char = tile.character;
+        fg = tile.foreground;
+
+        entity = this.area.getEntityAt(mapX, mapY);
+        items = this.area.getItemsAt(mapX, mapY);
+
+        if (items) {
+            var item = items[items.length - 1];
+            char = item.character;
+            fg = item.foreground;
+        }
+        if (entity) {
+            char = entity.character;
+            fg = entity.foreground;
+        }
+
+        display.draw(p.x, p.y, char, fg, bg);
+    }
+
+    // render a caption at the bottom of the screen
+    display.drawText(0, Game.screenHeight - 1, this.captionFunction(mapX, mapY)
+    );
+
+    this.validTarget = okCheck;
+};
 
 
 Game.Screen.helpScreen = {

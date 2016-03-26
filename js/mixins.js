@@ -229,10 +229,25 @@ Game.Mixins.attacker = {
     isAttacker: true,
     init: function(template) {
         this.attackValue = template['baseAttackValue'] || 1;
+
+        this.isRangedAttacker = template['isRangedAttacker'] || false;
+        this.rangedAttackValue = template['rangedAttackValue'] || (this.isRangedAttacker ? 1 : 0);
+
+        this.canThrowItems = template['canThrowItems'] || false;
+        this.thrownAttackValue = template['thrownAttackValue'] || (this.canThrowItems ? 1 : 0);
     },
     listeners: {
         details: function() {
-            return [{key: 'attack', value: this.getAttackValue()}];
+            var results = [];
+            results.push({key: 'attack', value: this.getAttackValue()});
+
+            if (this.isRangedAttacker) {
+                results.push({key: 'ranged attack', value: this.getRangedAttackValue()});
+            }
+            if (this.canThrowItems) {
+                result.push({key: 'thrown attack', value: this.getThrownAttackValue()});
+            }
+            return results;
         }
     },
     getAttackValue: function() {
@@ -248,6 +263,34 @@ Game.Mixins.attacker = {
             }
         }
         return this.attackValue + modifier;
+    },
+    getRangedAttackValue: function() {
+        var modifier = 0;
+        // if we can equip items, then we should take into account
+        // our weapons and armor
+        if ((this.canWearArmor || this.canWieldWeapons) && this.isRangedAttacker) {
+            if (this.weapon) {
+                modifier += this.weapon.rangedAttackValue;
+            }
+            if (this.armor) {
+                modifier += this.armor.rangedAttackValue;
+            }
+        }
+        return this.rangedAttackValue + modifier;
+    },
+    getThrownAttackValue: function() {
+        var modifier = 0;
+        // if we can equip items, then we should take into account
+        // our weapons and armor
+        if ((this.canWearArmor || this.canWieldWeapons) && this.canThrowItems) {
+            if (this.weapon) {
+                modifier += this.weapon.thrownAttackValue;
+            }
+            if (this.armor) {
+                modifier += this.armor.thrownAttackValue;
+            }
+        }
+        return this.thrownAttackValue + modifier;
     },
     increaseAttackValue: function(amount) {
         // if no value was passed, default to +1
@@ -283,6 +326,66 @@ Game.Mixins.attacker = {
             target.takeDamage(this, 'blunt', damage);
             this.raiseEvent('onDealDamage', damage);
         }
+    },
+    rangedAttack: function(target) {
+        if (!(this.isRangedAttacker && this.weapon.rangedAttackValue > 0)) {
+            return;
+        }
+        // if the target is destructible, calculate the damage
+        // based on attack and defense values
+        // TODO: probably a total re-write based on weapons, etc.
+        if (target.isDestructible) {
+            var attack = this.getRangedAttackValue();
+            var defense = target.getDefenseValue();
+            var maxDmg = Math.max(0, attack - defense);
+            var damage = 1 + Math.floor(Math.random() * maxDmg);
+
+            var weapon = this.weapon.name;
+
+            Game.sendMessage('default', this, "You shoot the %s with your %s for %s damage!",
+                             target.name, weapon, damage);
+            Game.sendMessage('warning', target, "The %s shoots you for %s damage!", this.name, damage);
+
+            target.takeDamage(this, 'ranged', damage);
+            this.raiseEvent('onDealDamage', damage);
+        }
+    },
+    thrownAttack: function(targetX, targetY, itemKey) {
+        var item = this.getItem(itemKey);
+
+        if (!(this.canThrowItems && item.thrownAttackValue > 0)) {
+            return false;
+        }
+
+        var target = this.area.getEntityAt(targetX, targetY);
+
+        // if the target is destructible, calculate the damage
+        // based on attack and defense values
+        // TODO: probably a total re-write based on weapons, etc.
+        if (target && target.isDestructible) {
+            var attack = this.getThrownAttackValue() + item.thrownAttackValue;
+            var defense = target.getDefenseValue();
+            var maxDmg = Math.max(0, attack - defense);
+            var damage = 1 + Math.floor(Math.random() * maxDmg);
+
+            Game.sendMessage('default', this, "You throw the %s at the %s for %s damage!",
+                             item.describe(), target.name, damage);
+            Game.sendMessage('warning', target, "The %s throws %s at you for %s damage!",
+                             this.name, item.describeA(), damage);
+
+            target.takeDamage(this, 'ranged', damage);
+            this.raiseEvent('onDealDamage', damage);
+        }
+        // if we don't have a target, or it's non-destructible, just throw the item
+        else {
+            Game.sendMessage('default', this, "You throw the %s.", item.describe());
+        }
+
+        // remove the thrown weapon from our inventory
+        this.removeItem(itemKey);
+        // and add it to the world at the target x, y
+        this.area.addItem(targetX, targetY, item);
+        return true;
     }
 };
 
@@ -735,6 +838,7 @@ Game.Mixins.equippable = {
     isEquippable: true,
     init: function(template) {
         this.attackValue = template['attackValue'] || 0;
+        this.rangedAttackValue = template['rangedAttackValue'] || 0;
         this.defenseValue = template['defenseValue'] || 0;
         this.isWieldable = template['isWieldable'] || false;
         this.isWearable = template['isWearable'] || false;
@@ -745,10 +849,25 @@ Game.Mixins.equippable = {
             if (this.attackValue) {
                 results.push({key: 'attack', value: this.attackValue});
             }
+            if (this.rangedAttackValue) {
+                results.push({key: 'ranged', value: this.rangedAttackValue});
+            }
             if (this.defenseValue) {
                 results.push({key: 'defense', value: this.defenseValue});
             }
             return results;
+        }
+    }
+};
+
+Game.Mixins.throwable = {
+    isThrowable: true,
+    init: function(template) {
+        this.thrownAttackValue = template['thrownAttackValue'] || 0;
+    },
+    listeners: {
+        details: function() {
+            return ({key: 'thrown', value: this.thrownAttackValue});
         }
     }
 };
