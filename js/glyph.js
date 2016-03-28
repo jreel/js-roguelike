@@ -32,6 +32,23 @@ Game.Glyph.prototype.getGlyph = function() {
     return "%c{" + this.foreground + "}%b{" + this.background + "}" + this.character + "%c{}%b{}";
 };
 
+Game.Glyph.prototype.darken = function() {
+    // TODO: alternative darken colors for different tilesets
+    var fg = ROT.Color.fromString(this.foreground);
+    var bg = ROT.Color.fromString(this.background);
+    var dfg = ROT.Color.toHex(ROT.Color.interpolate(fg, [0, 0, 0]));
+    var dbg = ROT.Color.toHex(ROT.Color.interpolate(bg, [0, 0, 0]));
+    return { foreground: dfg, background: dbg };
+};
+
+Game.Glyph.prototype.lighten = function() {
+    var fg = ROT.Color.fromString(this.foreground);
+    var bg = ROT.Color.fromString(this.background);
+    var lfg = ROT.Color.toHex(ROT.Color.interpolate(fg, [255, 255, 255]));
+    var lbg = ROT.Color.toHex(ROT.Color.interpolate(bg, [255, 255, 255]));
+    return { foreground: lfg, background: lbg };
+};
+
 
 // 'Dynamic' Glyph = a glyph that handles mixins
 // (not sure why we don't just put this on the Glyph object itself;

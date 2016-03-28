@@ -27,15 +27,6 @@ Game.Tile = function(properties) {
 // Make tiles inherit all the functionality from glyphs
 Game.Tile.extend(Game.Glyph);
 
-Game.Tile.prototype.darken = function() {
-    // TODO: alternative darken colors for different tilesets
-    var fg = ROT.Color.fromString(this.foreground);
-    var bg = ROT.Color.fromString(this.background);
-    var darkfg = ROT.Color.toHex(ROT.Color.interpolate(fg, [0,0,0]));
-    var darkbg = ROT.Color.toHex(ROT.Color.interpolate(bg, [0,0,0]));
-    return {foreground: darkfg, background: darkbg};
-};
-
 
 // move these to separate data file (template system)
 // at some point

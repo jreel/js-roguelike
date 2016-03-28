@@ -9,7 +9,7 @@
 
 
 var Game = {
-    version: "2016.03.26-01",
+    version: "2016.03.27-01",
 
     // DONE?: add extra displays
     // TODO: more displays for party/status - still a long way off
@@ -158,7 +158,7 @@ var Game = {
         this.displays.stats = new ROT.Display({
                 fontSize: 14,
                 //fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
-                fontStyle: 'bold',
+                //fontStyle: 'bold',
                 forceSquareRatio: false
             }
         );

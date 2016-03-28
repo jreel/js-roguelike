@@ -67,6 +67,7 @@ Game.Mixins.movable = {
             if (this.move(x, y)) {
 
                 // if there are items here, let the player know
+                /* superceded by the "What's Here" area of the stats screen
                 var items = area.getItemsAt(x, y);
                 if (items) {
                     if (items.length === 1) {
@@ -75,6 +76,7 @@ Game.Mixins.movable = {
                         Game.sendMessage('info', this, "You see a small pile of things here.");
                     }
                 }
+                */
                 return true;
             } else {
                 return false;
@@ -187,7 +189,7 @@ Game.Mixins.destructible = {
         this.raiseEvent('onTakeDamage', damageAmount);
         // if the hp are now 0 or less, remove us from the map
         if (this.hp <= 0) {
-            Game.sendMessage('default', attacker, "You kill the %s!", this.name);
+            Game.sendMessage('warning', attacker, "You kill the %s!", this.name);
             var message = String.format("You have been slain by the %s!", attacker.name);
 
             // Raise events
@@ -245,7 +247,7 @@ Game.Mixins.attacker = {
                 results.push({key: 'ranged attack', value: this.getRangedAttackValue()});
             }
             if (this.canThrowItems) {
-                result.push({key: 'thrown attack', value: this.getThrownAttackValue()});
+                results.push({key: 'thrown attack', value: this.getThrownAttackValue()});
             }
             return results;
         }
@@ -351,6 +353,7 @@ Game.Mixins.attacker = {
         }
     },
     thrownAttack: function(targetX, targetY, itemKey) {
+
         var item = this.getItem(itemKey);
 
         if (!(this.canThrowItems && item.thrownAttackValue > 0)) {
@@ -457,6 +460,7 @@ Game.Mixins.inventoryHolder = {
         this.inventorySlots = template['inventorySlots'] || 10;
         this.inventory = new Array(this.inventorySlots);
     },
+
     getInventory: function() {
         return this.holdsInventory ? this.inventory : null;
     },
@@ -502,12 +506,14 @@ Game.Mixins.inventoryHolder = {
         // is the indices for the array returned by area.getItemsAt
         var mapItems = this.area.getItemsAt(this.x, this.y);
         var added = 0;
+        var itemAdd;
         // iterate through all indices
         for (var i = 0; i < indices.length; i++) {
             // try to add the item. If our inventory is not full, then splice
             // the item out of the list of items. In order to fetch the right
             // item, we have to offset the number of items already added.
-            if (this.addItem(mapItems[indices[i] - added])) {
+            itemAdd = mapItems[indices[i] - added];
+            if (this.addItem(itemAdd)) {
                 mapItems.splice(indices[i] - added, 1);
                 added++;
             } else {
@@ -517,6 +523,17 @@ Game.Mixins.inventoryHolder = {
         }
         // update the map items
         this.area.setItemsAt(this.x, this.y, mapItems);
+
+        // message the player about the items added
+        if (this === Game.player) {
+            if (added == 1) {
+                Game.sendMessage('minor', this, "You pick up %s", itemAdd.describeA() + ".");
+            }
+            else if (added > 1) {
+                Game.sendMessage('minor', this, "You pick up the things.");
+            }
+        }
+
         // return true only if we added all items
         return (added === indices.length);
     },
@@ -527,7 +544,7 @@ Game.Mixins.inventoryHolder = {
             if (this.area) {
                 this.area.addItem(this.x, this.y, this.inventory[i]);
             }
-            Game.sendMessage('default', this, "You drop the %s on the ground.", this.inventory[i].name);
+            Game.sendMessage('minor', this, "You drop the %s on the ground.", this.inventory[i].name);
             this.removeItem(i);
         }
     },
@@ -536,7 +553,7 @@ Game.Mixins.inventoryHolder = {
             this.unwield();
         }
         if (this.armor === item) {
-            this.takeOff();
+            this.unwear();
         }
     }
 };
@@ -562,11 +579,11 @@ Game.Mixins.foodEater = {
         var hungerPct = (this.fullness / this.maxFullness) * 100;
         if (this.fullness <= 0) {
             this.kill("You have died of starvation!");
-        } else if (hungerPct <= 5) {
+        } else if (hungerPct <= 10) {
             this.tokens['hungry'] = true;
             this.tokens['full'] = false;
             Game.sendMessage('danger', this, "You are starving!");
-        } else if (hungerPct <= 25) {
+        } else if (hungerPct <= 30) {
             this.tokens['full'] = false;
             if (!this.tokens['hungry']) {
                 Game.sendMessage('warning', this, "You feel hungry.");
@@ -574,14 +591,14 @@ Game.Mixins.foodEater = {
             }
         } else if (this.fullness > this.maxFullness) {
             this.kill("Your stomach has ruptured from overeating!");
-        } else if (hungerPct >= 95) {
+        } else if (hungerPct >= 90) {
             this.tokens['hungry'] = false;
             this.tokens['full'] = true;
             if (!this.tokens['bursting']) {
                 this.tokens['bursting'] = true;
                 Game.sendMessage('danger', this, "You have eaten so much you feel like you will burst!");
             }
-        } else if (hungerPct >= 75) {
+        } else if (hungerPct >= 70) {
             this.tokens['hungry'] = false;
             if (!this.tokens['full']) {
                 Game.sendMessage('warning', this, "You feel full.");
@@ -595,13 +612,13 @@ Game.Mixins.foodEater = {
     getHungerState: function() {
         if (!this.eatsFood) { return 'Not Hungry'; }
         var hungerPct = (this.fullness / this.maxFullness) * 100;
-        if (hungerPct <= 5) {
+        if (hungerPct <= 10) {
             return '%c{#f00}Starving!%c{}';
-        } else if (hungerPct <= 25) {
+        } else if (hungerPct <= 30) {
             return '%c{#ff0}Hungry%c{}';
-        } else if (hungerPct >= 95) {
+        } else if (hungerPct >= 90) {
             return '%c{#f00}Overstuffed!%c{}';
-        } else if (hungerPct >= 75) {
+        } else if (hungerPct >= 70) {
             return 'Full';
         } else {
             return 'Not Hungry';
@@ -641,7 +658,7 @@ Game.Mixins.armorUser = {
     wear: function(item) {
         this.armor = item;
     },
-    takeOff: function() {
+    unwear: function() {
         this.armor = null;
     }
 };

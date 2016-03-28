@@ -436,7 +436,7 @@ Game.Screen.playScreen = {
                 // if only one item, don't show a screen, just try to pick it up
                 var item = items[0];
                 if (player.pickupItems([0])) {
-                    Game.sendMessage('default', player, "You pick up %s", item.describeA() + ".");
+                    //Game.sendMessage('minor', player, "You pick up %s", item.describeA() + ".");
                 } else {
                     Game.sendMessage('warning', player, "Your inventory is full! Nothing was picked up.");
                 }
@@ -478,18 +478,14 @@ Game.Screen.playScreen = {
     },
 
     showTargetSubScreen: function(subScreen, extraOptions) {
-        extraOptions = extraOptions || {};
-        var item = extraOptions['item'] || null;
-        var spell = extraOptions['spell'] || null;
-        var ranged = extraOptions['ranged'] || null;
 
         var offsets = this.getMapCoordinates(0, 0);
         var player = Game.player;
         subScreen.setup(player, player.x, player.y, offsets.x, offsets.y);
 
         // if we have extra options, pass them along
-        if (item) {
-            subScreen.passItem(item);
+        if (extraOptions) {
+            subScreen.passOptions(extraOptions);
         }
 
         this.setSubScreen(subScreen);
@@ -557,9 +553,10 @@ Game.Screen.statsScreen = {
         display.drawText(0, 0, "Day 1" + ", " + "00:00");
 
         // show current area
-        var currentBiome = Game.currentWorld.currentArea.biome;
-        currentBiome = currentBiome.toLowerCase();
-        currentBiome = currentBiome.replace("_", " ");
+        var area = Game.currentWorld.currentArea;
+        var biome = area.biome;
+        biome = biome.toLowerCase();
+        biome = biome.replace("_", " ");
         //var subBiome = Game.currentWorld.getBiomeName(Game.player.x, Game.player.y).toLowerCase();
         //currentArea += " (" + subBiome.toLowerCase() + ")";
         /*
@@ -568,7 +565,7 @@ Game.Screen.statsScreen = {
         var yCoordinate = player.y;
         coordinateLabel += xCoordinate + ', ' + yCoordinate + ')';
         */
-        display.drawText(0, 1, '%c{#fff}Exploring: ' + currentBiome);
+        display.drawText(0, 1, '%c{#fff}Exploring: ' + biome);
 
 
         // show current hp
@@ -581,23 +578,61 @@ Game.Screen.statsScreen = {
 
 
         // show current weapon
-        var weaponName;
+        var weaponName, weaponColor, weaponChar;
         if (player.weapon) {
-            weaponName = player.weapon.name;
+            weaponChar = player.weapon.character;
+            weaponColor = player.weapon.foreground;
+            weaponName = '%c{' + weaponColor + '}' + player.weapon.name;
         } else {
-            weaponName = 'nothing';
+            weaponChar = '';
+            weaponColor = '#000';
+            weaponName = '%c{#aaa}nothing';
         }
-        display.drawText(0, 10, '%c{#fff}%b{#000}Wielding: ' + weaponName);
+        var weaponLabel = '%c{#fff}%b{#000}[W]ielding: ';
+        var weaponLabelSize = ROT.Text.measure(weaponLabel).width;
+
+        display.drawText(0, 10, weaponLabel);
+        display.draw(weaponLabelSize + 2, 10, weaponChar, weaponColor);
+        display.drawText(weaponLabelSize + 4, 10, weaponName);
 
         // show current armor
-        var armorName;
+        var armorName, armorColor, armorChar;
         if (player.armor) {
-            armorName = player.armor.name;
+            armorChar = player.armor.character;
+            armorColor = player.armor.foreground;
+            armorName = '%c{' + armorColor + '}' + player.armor.name;
         } else {
-            armorName = 'nothing';
+            armorChar = '';
+            armorColor = '#000';
+            armorName = '%c{#aaa}nothing';
         }
-        display.drawText(0, 11, '%c{#fff}%b{#000}Wearing: ' + armorName);
+        var armorLabel = '%c{#fff}%b{#000}[W]earing: ';
 
+        display.drawText(0, 11, armorLabel);
+        display.draw(weaponLabelSize + 2, 11, armorChar, armorColor);
+        display.drawText(weaponLabelSize + 4, 11, armorName);
+
+
+
+        // at the very bottom, show what's here
+        var hereLine = Game.statsScreenHeight - 6;
+        var hereList = area.whatsHere(player.x, player.y);
+        
+        display.drawText(0, hereLine, '%c{#fff}%b{#000}Here:');
+        display.drawText(5, hereLine + 1, hereList.tile);
+
+        if (hereList.items) {
+            var item, itemChar, itemColor, itemName;
+            for (var i = 0; i < hereList.items.length; i++) {
+                item = hereList.items[i];
+                itemChar = item.character;
+                itemColor = item.foreground;
+                itemName = '%c{' + itemColor + '}' + item.describeA(true);
+
+                display.draw(3, hereLine + 2 + i, itemChar, itemColor);
+                display.drawText(5, hereLine + 2 + i, itemName);
+            }
+        }
 
 
     },
@@ -1033,10 +1068,17 @@ Game.Screen.pickupScreen = new Game.Screen.ItemListScreen({
     ok: function(selectedItems) {
         // try to pick up all items, messaging the player if they
         // couldn't all be picked up
-        if (Object.keys(selectedItems).length > 1) {
-            Game.sendMessage('default', this.player, "You pick up the things.");
+        var itemKeys = Object.keys(selectedItems);
+        /*
+        if (itemKeys.length == 1) {
+            var item = this.player.getItem(itemKeys[1]);
+            Game.sendMessage('minor', this.player, "You pick up the things.");
         }
-        if (!this.player.pickupItems(Object.keys(selectedItems))) {
+        else if (itemKeys.length > 1) {
+            Game.sendMessage('minor', this.player, "You pick up the things.");
+        }
+        */
+        if (!this.player.pickupItems(itemKeys)) {
             Game.sendMessage('warning', this.player, "Your inventory is full! Not all items were picked up.");
         }
         return true;
@@ -1134,13 +1176,13 @@ Game.Screen.eatScreen = new Game.Screen.ItemListScreen({
         var key = Object.keys(selectedItems)[0];
         var item = selectedItems[key];
         if (item.remainingPortions < item.maxPortions && item.remainingPortions === 1) {
-            Game.sendMessage('default', this.player, "You finish off the %s.", item.name);
+            Game.sendMessage('minor', this.player, "You finish off the %s.", item.name);
         }
         else if (item.remainingPortions > 1) {
-            Game.sendMessage('default', this.player, "You eat some of the %s.", item.name);
+            Game.sendMessage('minor', this.player, "You eat some of the %s.", item.name);
         }
         else {
-            Game.sendMessage('default', this.player, "You eat the %s.", item.name);
+            Game.sendMessage('minor', this.player, "You eat the %s.", item.name);
         }
         item.eat(this.player);
         if (item.remainingPortions <= 0) {
@@ -1187,7 +1229,7 @@ Game.Screen.equipScreen = new Game.Screen.ItemListScreen({
         // if the selected item is one we are currently wearing, we need to un-equip it
         if (item === this.player.armor) {
             Game.sendMessage('warning', this.player, "You remove your %s.", item.name);
-            this.player.takeOff();
+            this.player.unwear();
         }
         else if (item === this.player.weapon) {
             Game.sendMessage('warning', this.player, "You put away your %s.", item.name);
@@ -1198,12 +1240,12 @@ Game.Screen.equipScreen = new Game.Screen.ItemListScreen({
         else if (item.isWearable) {
             this.player.unequip(item);
             this.player.wear(item);
-            Game.sendMessage('default', this.player, "You are wearing %s.", item.describeA());
+            Game.sendMessage('minor', this.player, "You are wearing %s.", item.describeA());
         }
         else if (item.isWieldable) {
             this.player.unequip(item);
             this.player.wield(item);
-            Game.sendMessage('default', this.player, "You are wielding %s.", item.describeA());
+            Game.sendMessage('minor', this.player, "You are wielding %s.", item.describeA());
         }
         return true;
     },
@@ -1307,9 +1349,16 @@ Game.Screen.TargetingScreen.prototype.setup = function(player, startX, startY, o
                             });
     this.visibleCells = visibleCells;
 };
-Game.Screen.TargetingScreen.prototype.passItem = function(item) {
-    this.item = item;
+
+Game.Screen.TargetingScreen.prototype.passOptions = function(options) {
+    options = options || {};
+    this.item = options['item'] || this.item;
+    this.itemKey = options['itemKey'] || this.itemKey;
+    this.spell = options['spell'] || this.spell;
+    this.ranged = options['ranged'] || this.ranged;
+    this.target = options['target'] || this.target;
 };
+
 Game.Screen.TargetingScreen.prototype.handleInput = function(inputType, inputData) {
     var cmd = inputData.keyCode;
     // move the cursor
@@ -1347,21 +1396,24 @@ Game.Screen.TargetingScreen.prototype.moveCursor = function(dx, dy) {
 Game.Screen.TargetingScreen.prototype.render = function(display) {
     Game.Screen.playScreen.renderMap.call(Game.Screen.playScreen, display);
 
-    // draw a line from the start to the cursor
-    //var points = Game.Geometry.getLine(this.startX, this.startY, this.cursorX, this.cursorY);
     var map = this.area.map;
-    // highlight cells along the line
     var p, mapX, mapY, entity, items, tile, char, fg, bg;
+
+    // highlight ourself first, then loop through points
+    display.draw(this.startX, this.startY, this.player.character, this.player.foreground,
+                 this.player.lighten().background
+    );
+
     for (var i = 0, len = this.points.length; i < len; i++) {
         p = this.points[i];
         mapX = p.x + this.offsetX;
         mapY = p.y + this.offsetY;
-        bg = '#f6f';
 
         if (map.isExplored(mapX, mapY)) {
             tile = map.getTile(mapX, mapY);
             char = tile.character;
             fg = tile.foreground;
+            bg = tile.lighten().background;
 
             if (this.visibleCells[mapX + ',' + mapY]) {
                 entity = this.area.getEntityAt(mapX, mapY);
@@ -1381,6 +1433,7 @@ Game.Screen.TargetingScreen.prototype.render = function(display) {
         else {
             char = Game.Tile.nullTile.character;
             fg = Game.Tile.nullTile.foreground;
+            bg = Game.Tile.nullTile.lighten().background;
         }
         display.draw(p.x, p.y, char, fg, bg);
     }
@@ -1454,7 +1507,7 @@ Game.Screen.throwItemScreen = new Game.Screen.ItemListScreen({
         Game.Screen.playScreen.showTargetSubScreen(Game.Screen.throwAtTargetScreen,
                                                     {item: item, itemKey: key});
 
-        return true;
+        //return true;
     },
     handleInput: function(inputType, inputData) {
         if (inputType === 'keydown') {
@@ -1586,11 +1639,11 @@ Game.Screen.throwAtTargetScreen.render = function(display) {
     //var points = Game.Geometry.getLine(this.startX, this.startY, this.cursorX, this.cursorY);
     var map = this.area.map;
     // highlight cells along the line
-    var p, mapX, mapY, entity, items, tile, char, fg, bg = '#f6f';;
+    var p, mapX, mapY, entity, items, tile, char, fg, bg;
     var okCheck = true;
 
     // highlight ourself first, then loop through points
-    display.draw(this.startX, this.startY, this.player.character, this.player.foreground, bg);
+    display.draw(this.startX, this.startY, this.player.character, this.player.foreground, this.player.lighten().background);
 
     for (var i = 0, len = this.points.length; i < len; i++) {
         p = this.points[i];
@@ -1613,6 +1666,7 @@ Game.Screen.throwAtTargetScreen.render = function(display) {
         tile = map.getTile(mapX, mapY);
         char = tile.character;
         fg = tile.foreground;
+        bg = tile.lighten().background;
 
         entity = this.area.getEntityAt(mapX, mapY);
         items = this.area.getItemsAt(mapX, mapY);
@@ -1644,18 +1698,20 @@ Game.Screen.helpScreen = {
             fontSize: 16,
             forceSquareRatio: false });
         var availSize = display.computeSize(Game.playDivWidth, Game.playDivHeight);
-        display.setOptions({ width: availSize[0], height: availSize[1] });
+        var sw = availSize[0];
+        var sh = availSize[1];
+        display.setOptions({ width: sw, height: sh });
 
         var text   = 'Shattered Tower Help';
         var border = '--------------------';
         var y = 2;
 
         var textSize = ROT.Text.measure(text);
-        var centerStart = (Game.playScreenWidth - textSize.width) / 2;
+        var centerStart = (sw - textSize.width) / 2;
         display.drawText(centerStart, y++, text);
         display.drawText(centerStart, y++, border);
         y++;
-        display.drawText(1, y++, '[⇦⇧⇩⇨] to move, attack, break blocks, open doors');
+        display.drawText(1, y++, '[⇦⇧⇩⇨] (arrow keys) to move, attack, open doors');
         display.drawText(1, y++, '[Space] to pick up items, or change areas (such as stairs)');
         display.drawText(1, y++, '[I] to view your Inventory');
         display.drawText(1, y++, '[D] to Drop an item');
@@ -1667,7 +1723,7 @@ Game.Screen.helpScreen = {
         y +=2;
         text = '--- press any key to continue ---';
         textSize = ROT.Text.measure(text);
-        centerStart = (Game.playScreenWidth - textSize.width) / 2;
+        centerStart = (sw - textSize.width) / 2;
         display.drawText(centerStart, y++, text);
     },
 
