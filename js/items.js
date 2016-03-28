@@ -22,7 +22,8 @@ Game.Templates.Items = {
 
     mushroom: {
         name: 'mushroom',
-        character: 'ϙ',
+        //character: 'ϙ',
+        character: '\uD83C\uDF44', // 🍄
         foreground: '#784',
         edible: {
             foodValue: 20
@@ -41,7 +42,8 @@ Game.Templates.Items = {
 
     apple: {
         name: 'apple',
-        character: 'Ó',
+        //character: 'Ó',
+        character: '\uD83C\uDF4E', // 🍎
         foreground: '#f00',
         edible: {
             foodValue: 40
@@ -80,7 +82,8 @@ Game.Templates.Items = {
 
     dagger: {
         name: 'dagger',
-        character: '⍭',
+        //character: '⟊',
+        character: '\uD800\uDCC9',  // 𐃉
         foreground: '#888',
         equippable: {
             attackValue: 4,
@@ -94,7 +97,8 @@ Game.Templates.Items = {
 
     sword: {
         name: 'sword',
-        character: '〆',
+        //character: '⸸',
+        character: '\uD83D\uDDE1',  // 🗡
         foreground: '#fff',
         equippable: {
             attackValue: 6,
@@ -113,6 +117,29 @@ Game.Templates.Items = {
             isWieldable: true
         }
         //noRandom: true
+    },
+
+    bow: {
+        name: 'bow',
+        character: '⦄',
+        foreground: "#940",
+        equippable: {
+            attackValue: 5,
+            isWieldable: true
+        }
+        //noRandom: true
+    },
+
+    shield: {
+        name: 'shield',
+        //character: '⩌',
+        character: '\uD83D\uDEE1',  // 🛡
+        foreground: '#999',
+        equippable : {
+            attackValue: 0,
+            defenseValue: 2
+        },
+        noRandom: true
     },
 
     // Wearables
@@ -162,11 +189,37 @@ Game.Templates.Items = {
         //noRandom: true
     },
 
+    clothrobes: {
+        name: 'cloth robes',
+        character: '\uD83D\uDC58', // 👘
+        foreground: "#009",
+        equippable: {
+            attackValue: 0,
+            defenseValue: 1,
+            isWearable: true
+        }
+        //noRandom: true
+    },
+
+    leatherbag: {
+        name: 'leather bag',
+        character: '\uD83C\uDF92', // 🎒
+        foreground: "#a60",
+        equippable: {
+            attackValue: 0,
+            defenseValue: 1,
+            isWearable: true
+        }
+        //noRandom: true
+    },
+
+
     // weird items
 
     pumpkin: {
         name: 'pumpkin',
-        character: 'ტ',
+        //character: 'ტ',
+        character: '\uD83C\uDF83',  // 🎃
         foreground: "#f60",
         edible: {
             foodValue: 60
@@ -182,8 +235,23 @@ Game.Templates.Items = {
 
     meatstick: {
         name: 'haunch of meat',
-        character: 'ǫ',
+        //character: 'ǫ',
+        character: '\uD83C\uDF56',  // 🍖
         foreground: "#820",
+        edible: {
+            foodValue: 50
+        },
+        equippable: {
+            attackValue: 1,
+            isWieldable: true
+        }
+    },
+
+    chickenleg: {
+        name: 'leg of meat',
+        //character: 'ǫ',
+        character: '\uD83C\uDF57',  // 🍗
+        foreground: "#963",
         edible: {
             foodValue: 50
         },
@@ -195,7 +263,8 @@ Game.Templates.Items = {
 
     baguette: {
         name: 'baguette',
-        character: '/',
+        //character: '/',
+        character: '\uD83C\uDF5E',  // 🍞
         foreground: "#EB8",
         edible: {
             foodValue: 50
@@ -203,6 +272,16 @@ Game.Templates.Items = {
         equippable: {
             attackValue: 1,
             isWieldable: true
+        }
+    },
+
+    bread: {
+        name: 'bread',
+        //character: '/',
+        character: '\uD83C\uDF5E',  // 🍞
+        foreground: "#DB7",
+        edible: {
+            foodValue: 50
         }
     }
 

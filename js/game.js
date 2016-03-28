@@ -158,7 +158,7 @@ var Game = {
         this.displays.stats = new ROT.Display({
                 fontSize: 14,
                 //fontFamily: "'Cambria', 'Segoe UI Symbol', 'symbola', 'monospace'",
-                fontStyle: 'bold',
+                //fontStyle: 'bold',
                 forceSquareRatio: false
             }
         );

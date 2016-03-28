@@ -317,3 +317,55 @@ Game.Area.prototype.addItemAtRandomPosition = function(item) {
     var position = this.map.getRandomFloorPosition();
     this.addItem(position.x, position.y, item);
 };
+
+/* Tile Description */
+Game.Area.prototype.describeTile = function(x, y) {
+    // given an (x, y) location, return descriptions of the tile
+    // as well as any items or creatures on the tile.
+
+    var tile = this.map.getTile(x, y);
+    var items = this.getItemsAt(x, y);
+    var entity = this.getEntityAt(x, y);
+
+    var descriptions = {};
+    descriptions['tile'] = '%c{' + tile.foreground + '}' + tile.description;
+
+    if (entity && entity !== Game.player) {
+        descriptions['entity'] = entity.getGlyph() + ' ' + entity.describeA(true);
+    }
+    if (items) {
+        descriptions['items'] = [];
+        var item, itemDesc;
+        for (var i = 0; i < items.length; i++) {
+            item = items[i];
+            itemDesc = item.getGlyph() + ' ' + item.describeA(true);
+            descriptions['items'].push(itemDesc);
+        }
+    }
+    return descriptions;
+};
+
+Game.Area.prototype.whatsHere = function(x, y) {
+    // given an (x, y) location, return descriptions of the tile
+    // as well as a list of any items or creatures on the tile.
+
+    var tile = this.map.getTile(x, y);
+    var items = this.getItemsAt(x, y);
+    var entity = this.getEntityAt(x, y);
+
+    var list = {};
+    list['tile'] = '%c{' + tile.foreground + '}' + tile.description;
+
+    if (entity && entity !== Game.player) {
+        list['entity'] = entity;
+    }
+    if (items) {
+        list['items'] = [];
+        var item;
+        for (var i = items.length - 1; i >= 0; i--) {
+            item = items[i];
+            list['items'].push(item);
+        }
+    }
+    return list;
+};

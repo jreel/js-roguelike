@@ -16,8 +16,10 @@ Game.sendMessage = function(msgType, recipient, message, subs) {
         color = "%c{#ff0}";
     } else if (msgType === 'info') {
         color = "%c{#6cf}";
+    } else if (msgType === 'minor') {
+        color = "%c{#aaa}";
     } else {
-        color = "";
+        color = "%c{#fff}";
     }
 
     if (recipient.isMessageRecipient) {
