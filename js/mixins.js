@@ -173,10 +173,10 @@ Game.Mixins.destructible = {
         // if we can equip items, then we should take into account
         // our weapons and armor
         if (this.canWearArmor || this.canWieldWeapons) {
-            if (this.weapon) {
+            if (this.weapon && this.weapon.defenseValue) {
                 modifier += this.weapon.defenseValue;
             }
-            if (this.armor) {
+            if (this.armor && this.armor.defenseValue) {
                 modifier += this.armor.defenseValue;
             }
         }
@@ -257,10 +257,10 @@ Game.Mixins.attacker = {
         // if we can equip items, then we should take into account
         // our weapons and armor
         if (this.canWearArmor || this.canWieldWeapons) {
-            if (this.weapon) {
+            if (this.weapon && this.weapon.attackValue) {
                 modifier += this.weapon.attackValue;
             }
-            if (this.armor) {
+            if (this.armor && this.armor.attackValue) {
                 modifier += this.armor.attackValue;
             }
         }
@@ -271,10 +271,10 @@ Game.Mixins.attacker = {
         // if we can equip items, then we should take into account
         // our weapons and armor
         if ((this.canWearArmor || this.canWieldWeapons) && this.isRangedAttacker) {
-            if (this.weapon) {
+            if (this.weapon && this.weapon.rangedAttackValue) {
                 modifier += this.weapon.rangedAttackValue;
             }
-            if (this.armor) {
+            if (this.armor && this.armor.rangedAttackValue) {
                 modifier += this.armor.rangedAttackValue;
             }
         }
@@ -285,10 +285,10 @@ Game.Mixins.attacker = {
         // if we can equip items, then we should take into account
         // our weapons and armor
         if ((this.canWearArmor || this.canWieldWeapons) && this.canThrowItems) {
-            if (this.weapon) {
+            if (this.weapon && this.weapon.thrownAttackValue) {
                 modifier += this.weapon.thrownAttackValue;
             }
-            if (this.armor) {
+            if (this.armor && this.armor.thrownAttackValue) {
                 modifier += this.armor.thrownAttackValue;
             }
         }
