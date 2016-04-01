@@ -7,4 +7,4 @@ And using the rot.js library developed by Ondrej Zara
 http://ondras.github.io/rot.js/hp/
 
 Demo (current version) available for play at
-http://jreel.github.io/Js-Roguelike-Tutorial/
+http://jreel.github.io/js-roguelike/
