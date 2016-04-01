@@ -1,4 +1,4 @@
-# Js-Roguelike-Tutorial
+# js-roguelike
 
 Based on  the "Building a Roguelike in Javascript" tutorial by Dominic
 http://www.codingcookies.com/2013/04/01/building-a-roguelike-in-javascript-part-1/
