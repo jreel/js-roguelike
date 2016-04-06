@@ -9,7 +9,7 @@
 
 
 var Game = {
-    version: "2016.03.27-02",
+    version: "2016.04.05-01",
 
     // DONE?: add extra displays
     // TODO: more displays for party/status - still a long way off
